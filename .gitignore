@@ -1,0 +1,22 @@
+# Cada proyecto trae su propio .gitignore (web/ y movil/). Aqui solo lo que
+# es comun a todo el repositorio.
+
+# Secretos: nunca subir credenciales
+.env
+.env.*
+!.env.example
+
+# Compilados e instaladores de Android
+*.apk
+*.aab
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+.claude/
+
+# Copias comprimidas del proyecto
+*.zip

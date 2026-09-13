@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * El preflight de Tailwind deja los controles de formulario sin borde ni
+ * relleno, asi que se veian como una linea fina. Se les devuelve el contorno
+ * suave que usa la app movil (OutlinedTextField) para que ambos productos
+ * pidan los datos de la misma manera.
+ */
+@layer base {
+    input[type='text'],
+    input[type='email'],
+    input[type='password'],
+    input[type='number'],
+    input[type='date'],
+    input[type='search'],
+    input[type='tel'],
+    select,
+    textarea {
+        @apply border border-linea bg-white px-3 py-2;
+    }
+
+    input[type='checkbox'] {
+        @apply border border-linea text-campo;
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}

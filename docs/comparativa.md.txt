@@ -1,0 +1,80 @@
+# Cuadro comparativo: Kotlin Multiplatform vs Flutter vs React Native
+
+## Semana 1 — Evaluación de tecnologías multiplataforma
+
+El presente cuadro compara tres tecnologías utilizadas para el desarrollo de aplicaciones multiplataforma: Kotlin Multiplatform (KMP), Flutter y React Native. La comparación considera diferentes aspectos técnicos y de desarrollo con el objetivo de seleccionar la alternativa más adecuada para el proyecto LatteGo.
+
+## Cuadro comparativo
+
+| Dimensión | Kotlin Multiplatform (KMP) | Flutter | React Native |
+|---|---|---|---|
+| **1. Lenguaje de programación** | Utiliza principalmente **Kotlin**, lenguaje utilizado para desarrollar la lógica compartida y el código específico de cada plataforma. | Utiliza **Dart** como lenguaje principal para desarrollar aplicaciones Flutter. | Utiliza principalmente **JavaScript o TypeScript**, junto con React para construir la aplicación. |
+| **2. Enfoque multiplataforma** | Permite compartir código entre diferentes plataformas. El desarrollador puede compartir lógica de negocio y datos, y también compartir la interfaz mediante Compose Multiplatform. | Permite desarrollar aplicaciones multiplataforma desde una base de código compartida para diferentes sistemas operativos. | Permite reutilizar código entre plataformas y también permite separar las partes que necesitan comportamiento específico para cada plataforma. |
+| **3. Interfaz de usuario** | Puede utilizar **Compose Multiplatform**, un framework declarativo que permite compartir código de interfaz entre diferentes plataformas. | Utiliza un sistema de **Widgets** para construir la interfaz de usuario. La interfaz es renderizada por Flutter. | Utiliza componentes de React Native que están respaldados por componentes nativos de las plataformas. |
+| **4. Rendimiento** | KMP permite compilar código para las plataformas correspondientes y acceder directamente a APIs específicas cuando es necesario. Esto permite mantener un enfoque cercano al desarrollo nativo. | Flutter compila las aplicaciones para código de máquina en las versiones de producción y utiliza su propio sistema de renderizado para construir la interfaz. | React Native utiliza una arquitectura moderna que permite una comunicación más directa entre JavaScript y las partes nativas de la aplicación, reduciendo algunas limitaciones de la arquitectura anterior. |
+| **5. Acceso a funcionalidades nativas** | Permite acceder a APIs específicas de cada plataforma mediante mecanismos de interoperabilidad y código específico cuando una funcionalidad no está disponible de manera multiplataforma. | Permite integrar funcionalidades específicas de la plataforma mediante plugins y código específico de cada plataforma. | Permite utilizar módulos y componentes nativos y también implementar código específico para Android e iOS. |
+| **6. Ecosistema y herramientas** | Se integra con el ecosistema de Kotlin y herramientas como Gradle, Android Studio e IntelliJ IDEA. Compose Multiplatform complementa KMP para compartir la interfaz. | Cuenta con un ecosistema propio basado en Flutter, Dart, paquetes y plugins para ampliar las funcionalidades de las aplicaciones. | Se integra con el ecosistema de JavaScript/TypeScript, React y paquetes disponibles mediante el ecosistema de Node.js. |
+| **7. Adecuación para LatteGo** | **Alta.** Es la alternativa más adecuada porque coincide con las tecnologías establecidas para el curso y permite desarrollar la aplicación utilizando Kotlin Multiplatform y Compose Multiplatform. | **Media.** Es una alternativa técnicamente viable para LatteGo, pero implicaría trabajar con Dart y Flutter en lugar del stack tecnológico definido para el curso. | **Media.** También permite desarrollar LatteGo, pero requiere trabajar con JavaScript/TypeScript y React Native, alejándose de las tecnologías definidas para el proyecto. |
+
+## Análisis de las alternativas
+
+### Kotlin Multiplatform
+
+Kotlin Multiplatform permite compartir código entre diferentes plataformas, incluyendo lógica de negocio y otras partes de la aplicación. Además, mediante Compose Multiplatform se puede compartir la interfaz de usuario entre plataformas.
+
+Una ventaja importante para LatteGo es que el proyecto utilizará Kotlin Multiplatform y Compose Multiplatform, por lo que el equipo podrá aplicar directamente los conocimientos y herramientas establecidos para el curso.
+
+KMP también permite mantener código específico para una plataforma cuando una funcionalidad requiere acceso directo a APIs nativas.
+
+### Flutter
+
+Flutter es un framework multiplataforma basado en Dart. Su interfaz utiliza widgets y cuenta con herramientas para desarrollar aplicaciones para diferentes plataformas desde una base de código compartida.
+
+Flutter también permite acceder a funcionalidades específicas de las plataformas mediante plugins o código nativo. Por estas características sería una alternativa técnicamente viable para LatteGo.
+
+Sin embargo, para este proyecto presenta como principal desventaja que el equipo tendría que trabajar con Dart y Flutter en lugar de Kotlin Multiplatform y Compose Multiplatform.
+
+### React Native
+
+React Native permite desarrollar aplicaciones utilizando React y JavaScript o TypeScript, utilizando componentes que están respaldados por elementos nativos de las plataformas.
+
+También permite reutilizar código entre plataformas y crear implementaciones específicas para Android o iOS cuando sea necesario.
+
+Al igual que Flutter, React Native sería técnicamente capaz de cubrir las necesidades de LatteGo, pero no coincide con el stack tecnológico definido para el desarrollo del proyecto.
+
+## Tecnología seleccionada
+
+### Kotlin Multiplatform
+
+Después de comparar las tres alternativas, el equipo selecciona **Kotlin Multiplatform** como tecnología para el desarrollo de LatteGo.
+
+La selección se debe principalmente a los siguientes motivos:
+
+1. Es la tecnología establecida para el desarrollo del proyecto.
+2. Permite compartir código entre plataformas.
+3. Puede utilizar Compose Multiplatform para compartir la interfaz.
+4. Permite acceder a funcionalidades específicas de cada plataforma.
+5. Utiliza Kotlin, que será el lenguaje principal del proyecto.
+6. Se adapta al desarrollo previsto para Android y Desktop.
+7. Permite implementar una arquitectura que separe la presentación, lógica de negocio y datos.
+8. Es adecuada para las funcionalidades previstas de LatteGo, como autenticación, CRUD, almacenamiento local, sincronización y acceso a funcionalidades nativas.
+
+Por estas razones, el equipo considera que **Kotlin Multiplatform es la alternativa más conveniente para LatteGo** dentro del contexto del curso y del alcance definido para el proyecto.
+
+## Referencias bibliográficas
+
+Flutter. (2026). *Flutter architectural overview*. Flutter documentation. https://docs.flutter.dev/resources/architectural-overview
+
+Flutter. (2026). *Build for and integrate with multiple platforms*. Flutter documentation. https://docs.flutter.dev/platform-integration
+
+Kotlin. (2026). *What is Kotlin Multiplatform*. Kotlin Multiplatform Documentation. https://kotlinlang.org/docs/multiplatform/kmp-overview.html
+
+Kotlin. (2026). *Share code on platforms*. Kotlin Multiplatform Documentation. https://kotlinlang.org/docs/multiplatform/multiplatform-share-on-platforms.html
+
+Kotlin. (2026). *Get started with Compose Multiplatform*. Kotlin Multiplatform Documentation. https://kotlinlang.org/docs/multiplatform/compose-multiplatform.html
+
+React Native. (2026). *Learn the basics*. React Native Documentation. https://reactnative.dev/docs/tutorial.html
+
+React Native. (2026). *Platform-specific code*. React Native Documentation. https://reactnative.dev/docs/platform-specific-code.html
+
+React Native. (2026). *About the New Architecture*. React Native Documentation. https://reactnative.dev/architecture/landing-page

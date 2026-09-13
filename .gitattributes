@@ -1,0 +1,20 @@
+# Git normaliza los finales de linea para que el repo funcione igual en
+# Windows, Mac y Linux.
+* text=auto
+
+# Los scripts de shell deben conservar LF: con CRLF, gradlew falla en Mac/Linux.
+*.sh    text eol=lf
+gradlew text eol=lf
+
+# Los scripts de Windows deben conservar CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binarios: nunca tocar
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.pdf   binary
+*.jar   binary
+*.ico   binary
