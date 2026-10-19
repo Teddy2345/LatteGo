@@ -12,15 +12,15 @@ use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Domain\Pedidos\Entities\ItemPedido;
 use App\Domain\Pedidos\Entities\Pedido;
+use App\Domain\Pedidos\Exceptions\ItemPedidoInvalidoException;
 use App\Domain\Pedidos\Repositories\PedidoRepository;
 use DateTimeImmutable;
 
 /**
  * Crea un pedido desde la tienda publica. Valida que cada producto exista,
- * este activo y tenga stock suficiente, pero no descuenta nada del almacen
- * ni cobra: el pedido solo deja constancia de lo que el cliente quiere, para
- * que el equipo de ventas lo confirme por su cuenta (cobro, entrega y
- * comprobante quedan para mas adelante).
+ * este activo y tenga stock disponible, pero no reserva ni descuenta nada:
+ * el pedido queda pendiente hasta que ventas lo confirme (eso reserva) y se
+ * entregue (eso descuenta del almacen).
  */
 final class CrearPedidoUseCase
 {
@@ -42,7 +42,18 @@ final class CrearPedidoUseCase
                 throw new ProductoNoEncontradoException("No existe un producto con id {$itemCarrito->productoId}.");
             }
 
-            $disponible = $this->movimientos->stockDe((int) $producto->id);
+            if ($producto->seVendePorUnidadEntera() && floor($itemCarrito->cantidad) !== $itemCarrito->cantidad) {
+                throw new ItemPedidoInvalidoException(sprintf(
+                    '%s se vende por %s: indica una cantidad sin decimales.',
+                    $producto->nombre,
+                    $producto->unidad,
+                ));
+            }
+
+            // Disponible es lo que hay menos lo ya reservado por pedidos
+            // confirmados que aun no se entregaron.
+            $disponible = max(0.0, $this->movimientos->stockDe((int) $producto->id)
+                - $this->pedidos->cantidadReservada((int) $producto->id));
 
             if ($itemCarrito->cantidad > $disponible) {
                 throw new StockInsuficienteException(sprintf(
@@ -57,7 +68,7 @@ final class CrearPedidoUseCase
                 productoId: (int) $producto->id,
                 nombreProducto: $producto->nombre,
                 cantidad: $itemCarrito->cantidad,
-                precioUnitario: $producto->precioReferencia,
+                precioUnitario: $producto->precioPara($datos->tipoCliente),
             );
         }
 
@@ -68,6 +79,9 @@ final class CrearPedidoUseCase
             fecha: new DateTimeImmutable($datos->fecha),
             observaciones: $datos->observaciones,
             items: $items,
+            usuarioId: $datos->usuarioId,
+            tipoEntrega: $datos->tipoEntrega,
+            tipoCliente: $datos->tipoCliente,
         );
 
         return PedidoData::desdeEntidad($this->pedidos->guardar($pedido));

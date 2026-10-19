@@ -28,6 +28,7 @@ final readonly class AcopioMovilData
         public ?float $longitud,
         public ?float $precisionMetros,
         public ?string $capturadoEn,
+        public ?int $acopiadorId = null,
     ) {
     }
 
@@ -50,6 +51,7 @@ final readonly class AcopioMovilData
             longitud: $acopio->ubicacion?->longitud,
             precisionMetros: $acopio->ubicacion?->precisionMetros,
             capturadoEn: $acopio->ubicacion?->capturadoEn->format('Y-m-d H:i:s'),
+            acopiadorId: $acopio->acopiadorId,
         );
     }
 }

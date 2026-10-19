@@ -8,10 +8,14 @@ use App\Models\User;
 
 final class SolicitudCambioZonaPolicy
 {
-    /** Quien acopia en campo es quien detecta que un proveedor se traslada. */
+    /**
+     * El traslado lo pide el propio proveedor desde su app: es quien sabe
+     * que se muda y a donde. El acopiador ya no lo pide por el, para que
+     * nadie mueva de zona a un ganadero sin que este lo haya pedido.
+     */
     public function create(User $user): bool
     {
-        return $user->can('acopios.registrar');
+        return $user->hasRole('proveedor');
     }
 
     /** La bandeja de aprobacion es la misma autoridad que ya reasigna rutas. */

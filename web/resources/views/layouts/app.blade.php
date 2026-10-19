@@ -50,13 +50,6 @@
                     </x-nav-link>
                 @endcan
 
-                @can('viewAny', App\Infrastructure\Movilidad\Models\MovilidadModel::class)
-                    <x-nav-link href="{{ route('movilidades.index') }}" :active="str_starts_with($current, 'movilidades.')">
-                        <x-slot:icon><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 5.25v-5.25m0 0h-12" /></x-slot:icon>
-                        Movilidades
-                    </x-nav-link>
-                @endcan
-
                 @can('viewAny', App\Infrastructure\Acopio\Models\AcopioModel::class)
                     <x-nav-link href="{{ route('acopios.index') }}" :active="str_starts_with($current, 'acopios.')">
                         <x-slot:icon><path stroke-linecap="round" stroke-linejoin="round" d="M12 3.75c-3.75 4-6 7.09-6 9.75a6 6 0 1 0 12 0c0-2.66-2.25-5.75-6-9.75Z" /></x-slot:icon>
@@ -85,6 +78,13 @@
                     <x-nav-link href="{{ route('inventario.index') }}" :active="str_starts_with($current, 'inventario.')">
                         <x-slot:icon><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5 12 3.75 3.75 7.5m16.5 0L12 11.25M20.25 7.5v9L12 20.25m0-9L3.75 7.5m8.25 3.75v9M3.75 7.5v9L12 20.25" /></x-slot:icon>
                         Almacen
+                    </x-nav-link>
+                @endcan
+
+                @can('registrarEntrada', App\Infrastructure\Inventario\Models\MovimientoInventarioModel::class)
+                    <x-nav-link href="{{ route('compras.index') }}" :active="str_starts_with($current, 'compras.')">
+                        <x-slot:icon><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m-2.25 9h12a2.25 2.25 0 0 0 2.25-2.25V9.75A2.25 2.25 0 0 0 18 7.5H6a2.25 2.25 0 0 0-2.25 2.25v7.5A2.25 2.25 0 0 0 6 19.5Z" /></x-slot:icon>
+                        Compras
                     </x-nav-link>
                 @endcan
 

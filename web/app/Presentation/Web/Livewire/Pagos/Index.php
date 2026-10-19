@@ -39,8 +39,8 @@ final class Index extends Component
         $generados = $generar->ejecutar($this->fechaReferencia);
 
         $this->mensaje = count($generados) > 0
-            ? 'Se generaron '.count($generados).' pago(s) para la semana.'
-            : 'No hay pagos nuevos para generar en esa semana (ya generados o sin acopios sincronizados).';
+            ? 'Se generaron o actualizaron '.count($generados).' pago(s) para la semana.'
+            : 'No hay cambios en esa semana: ya estaba al día o no tiene acopios sincronizados.';
     }
 
     public function marcarPagado(int $id, MarcarPagoComoPagadoUseCase $marcar): void
@@ -52,7 +52,7 @@ final class Index extends Component
 
     public function render(ListarPagosUseCase $listar, ListarProveedoresUseCase $listarProveedores): View
     {
-        $paginador = PagoModel::query()->orderByDesc('semana_inicio')->paginate(8);
+        $paginador = PagoModel::query()->orderByDesc('semana_inicio')->orderBy('proveedor_id')->orderBy('secuencia')->paginate(8);
 
         $mapped = $paginador->getCollection()->map(function (PagoModel $m): PagoData {
             return new PagoData(
@@ -65,6 +65,7 @@ final class Index extends Component
                 totalPagar: (float) $m->total_pagar,
                 fechaPago: $m->fecha_pago?->format('Y-m-d'),
                 estado: (string) $m->estado,
+                secuencia: (int) $m->secuencia,
             );
         });
 

@@ -41,7 +41,7 @@ final class CalidadModelFactory extends Factory
             'prueba_alcohol' => $pruebaAlcohol,
             'resultado' => $rechazada ? 'rechazada' : 'aceptada',
             'motivo_rechazo' => $rechazada ? 'adulteracion' : null,
-            'sancion_aplicada' => $rechazada ? 'descuento_semana' : 'ninguna',
+            'sancion_aplicada' => $rechazada ? 'sin_pago_entrega' : 'ninguna',
         ];
     }
 }

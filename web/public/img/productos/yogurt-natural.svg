@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Yogurt natural">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7F7F0"/>
+      <stop offset="1" stop-color="#E7EEE3"/>
+    </linearGradient>
+    <linearGradient id="vaso" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EFEFEA"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#fondo)"/>
+  <circle cx="75" cy="60" r="58" fill="#DFE5DA" opacity=".6"/>
+  <ellipse cx="200" cy="208" rx="95" ry="13" fill="#173E32" opacity=".10"/>
+  <!-- vaso -->
+  <path d="M140 88 L260 88 L246 200 L154 200 Z" fill="url(#vaso)"/>
+  <path d="M146 132 L254 132 L248 178 L152 178 Z" fill="#173E32"/>
+  <text x="200" y="162" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#E4C58A" font-weight="bold">natural</text>
+  <!-- yogur cremoso -->
+  <path d="M136 88 Q145 64 168 73 Q180 54 200 66 Q222 52 232 73 Q256 64 264 88 Z" fill="#FFFDF7"/>
+  <path d="M156 81 Q172 70 186 79" fill="none" stroke="#EDE7D6" stroke-width="4" stroke-linecap="round"/>
+  <rect x="132" y="84" width="136" height="10" rx="5" fill="#E9E9E2"/>
+  <!-- cuchara -->
+  <g transform="translate(296 150) rotate(28)">
+    <rect x="-4" y="-10" width="8" height="70" rx="4" fill="#C9A26B"/>
+    <ellipse cx="0" cy="-22" rx="14" ry="20" fill="#DDBB86"/>
+    <ellipse cx="0" cy="-24" rx="9" ry="13" fill="#FFFDF7"/>
+  </g>
+</svg>

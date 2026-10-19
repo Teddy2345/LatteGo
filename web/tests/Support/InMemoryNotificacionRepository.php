@@ -24,6 +24,7 @@ final class InMemoryNotificacionRepository implements NotificacionRepository
             nivel: $notificacion->nivel,
             datos: $notificacion->datos,
             creadaEn: new \DateTimeImmutable(),
+            usuarioId: $notificacion->usuarioId,
         );
 
         $this->notificaciones[$guardada->id] = $guardada;
@@ -31,9 +32,15 @@ final class InMemoryNotificacionRepository implements NotificacionRepository
         return $guardada;
     }
 
-    public function listarRecientes(int $limite): array
+    public function listarRecientes(int $limite, ?int $usuarioId = null, bool $soloPropias = false): array
     {
-        return array_slice(array_reverse(array_values($this->notificaciones)), 0, $limite);
+        $visibles = array_values(array_filter(
+            $this->notificaciones,
+            static fn (Notificacion $n): bool => $usuarioId === null
+                || ($soloPropias ? $n->usuarioId === $usuarioId : $n->usuarioId === null || $n->usuarioId === $usuarioId),
+        ));
+
+        return array_slice(array_reverse($visibles), 0, $limite);
     }
 
     public function idsLeidasPor(int $userId, array $notificacionIds): array
@@ -45,8 +52,8 @@ final class InMemoryNotificacionRepository implements NotificacionRepository
     {
     }
 
-    public function contarNoLeidasPara(int $userId): int
+    public function contarNoLeidasPara(int $userId, bool $soloPropias = false): int
     {
-        return count($this->notificaciones);
+        return count($this->listarRecientes(PHP_INT_MAX, $userId, $soloPropias));
     }
 }

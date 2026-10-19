@@ -21,9 +21,20 @@ final class Catalogo extends Component
 
     public string $mensaje = '';
 
-    public function agregar(int $productoId): void
+    /**
+     * Cada caja de cantidad arranca en 1. Sin esto, wire:model pisaba el
+     * value="1" de la vista y el visitante veia la caja vacia.
+     */
+    public function mount(ListarProductosConStockUseCase $listar): void
     {
-        $cantidad = (float) ($this->cantidades[$productoId] ?? 1);
+        foreach ($listar->ejecutar(soloActivos: true, tipo: TipoProducto::ProductoTerminado) as $producto) {
+            $this->cantidades[$producto->id] ??= 1;
+        }
+    }
+
+    public function agregar(int $productoId, ListarProductosConStockUseCase $listar): void
+    {
+        $cantidad = $this->cantidadEntregable($listar, $productoId, (float) ($this->cantidades[$productoId] ?? 1));
 
         if ($cantidad <= 0) {
             return;

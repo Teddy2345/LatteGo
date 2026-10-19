@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    La planta corre Laravel en su propia red y sin certificado, y la IP del
+    equipo cambia con la Wi-Fi. Las reglas de Android solo entienden nombres
+    exactos, no rangos, así que no hay forma de permitir "solo la red local":
+    o se permite HTTP en claro, o la app no puede hablar con su servidor.
+
+    Se permite, entonces, y queda anotado el precio: el token viaja sin cifrar
+    por la red de la planta. El día que el servidor tenga certificado, basta
+    con poner cleartextTrafficPermitted="false" aquí.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

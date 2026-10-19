@@ -9,6 +9,7 @@ use App\Domain\Pedidos\ValueObjects\EstadoPedido;
 use App\Infrastructure\Pedidos\Models\PedidoModel;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -24,6 +25,7 @@ final class Index extends Component
      * defecto: le interesa tanto lo que le falta entregar como su
      * historial reciente.
      */
+    #[Locked]
     public bool $soloAsignados = false;
 
     public function mount(): void

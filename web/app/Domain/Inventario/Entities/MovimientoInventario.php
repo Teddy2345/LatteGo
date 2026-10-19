@@ -6,6 +6,7 @@ namespace App\Domain\Inventario\Entities;
 
 use App\Domain\Inventario\Exceptions\CantidadProductoInvalidaException;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoCliente;
 use App\Domain\Inventario\ValueObjects\TipoMovimiento;
 use DateTimeImmutable;
 
@@ -30,6 +31,9 @@ final class MovimientoInventario
         public readonly ?string $requestId,
         public readonly ?string $lote,
         public readonly ?int $produccionId,
+        public readonly ?TipoCliente $tipoCliente = null,
+        /** El pedido que origino esta venta, si no fue de mostrador. */
+        public readonly ?int $pedidoId = null,
     ) {
     }
 
@@ -72,6 +76,8 @@ final class MovimientoInventario
         ?string $cliente,
         ?int $usuarioId,
         ?string $requestId = null,
+        TipoCliente $tipoCliente = TipoCliente::Externo,
+        ?int $pedidoId = null,
     ): self {
         if (! is_finite($precioUnitario) || $precioUnitario <= 0) {
             throw new CantidadProductoInvalidaException('El precio unitario debe ser mayor a cero.');
@@ -91,6 +97,8 @@ final class MovimientoInventario
             requestId: $requestId,
             lote: null,
             produccionId: null,
+            tipoCliente: $tipoCliente,
+            pedidoId: $pedidoId,
         );
     }
 
@@ -161,6 +169,8 @@ final class MovimientoInventario
         ?string $requestId,
         ?string $lote = null,
         ?int $produccionId = null,
+        ?TipoCliente $tipoCliente = null,
+        ?int $pedidoId = null,
     ): self {
         return new self(
             $id,
@@ -176,6 +186,8 @@ final class MovimientoInventario
             $requestId,
             $lote,
             $produccionId,
+            $tipoCliente,
+            $pedidoId,
         );
     }
 

@@ -24,7 +24,7 @@ final readonly class RendimientoPorcentaje
 
     public static function calcular(LitrosProcesados $litros, QuesosProducidos $quesos): self
     {
-        return new self(($quesos->valor / $litros->valor) * 100);
+        return new self($litros->valor > 0 ? ($quesos->valor / $litros->valor) * 100 : 0);
     }
 
     public function dentroDelRangoEsperado(): bool

@@ -20,9 +20,9 @@ final class ListarNotificacionesUseCase
     /**
      * @return NotificacionData[]
      */
-    public function ejecutar(int $userId, int $limite = self::LIMITE_POR_DEFECTO): array
+    public function ejecutar(int $userId, int $limite = self::LIMITE_POR_DEFECTO, bool $soloPropias = false): array
     {
-        $recientes = $this->notificaciones->listarRecientes($limite);
+        $recientes = $this->notificaciones->listarRecientes($limite, $userId, $soloPropias);
 
         $idsLeidas = array_flip($this->notificaciones->idsLeidasPor(
             $userId,

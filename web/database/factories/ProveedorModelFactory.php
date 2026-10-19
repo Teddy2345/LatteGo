@@ -33,8 +33,12 @@ final class ProveedorModelFactory extends Factory
                 $this->faker->randomElement(self::PREFIJOS_FINCA).' '.$this->faker->randomElement(self::NOMBRES_FINCA),
             ),
             'litros_prom' => $this->faker->numberBetween(15, 300),
-            'precio_litro' => $this->faker->randomFloat(2, 3.0, 4.5),
-            'activo' => $this->faker->boolean(90),
+            // El precio por litro es general para toda la planta.
+            'precio_litro' => \App\Application\Proveedor\UseCases\ObtenerPrecioLitroVigenteUseCase::PRECIO_INICIAL,
+            // Activo por defecto, no al azar: "activo" decide si se le puede
+            // recibir leche, y sortearlo hacia fallar una prueba de cada diez.
+            // Para el caso contrario esta el estado inactivo().
+            'activo' => true,
             'ruta_id' => null,
         ];
     }

@@ -11,6 +11,7 @@ use App\Domain\Inventario\Exceptions\ProductoNoEncontradoException;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoProducto;
 use DateTimeImmutable;
 
 /**
@@ -41,6 +42,8 @@ final class RegistrarProduccionProductoUseCase
         if ($producto === null) {
             throw new ProductoNoEncontradoException("No existe un producto con id {$datos->productoId}.");
         }
+
+        $producto->exigirTipo(TipoProducto::ProductoTerminado, 'una transformación');
 
         $movimiento = MovimientoInventario::produccion(
             productoId: $datos->productoId,

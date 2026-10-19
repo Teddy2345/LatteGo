@@ -1,5 +1,18 @@
 <div class="max-w-7xl mx-auto">
     <div class="space-y-6">
+    @if ($errorCuenta !== '')
+        <p role="alert" class="bg-red-50 text-red-700 rounded-lg p-4 text-sm">{{ $errorCuenta }}</p>
+    @endif
+
+    @if ($claveGenerada !== '')
+        <div role="status" class="bg-salvia border border-campo rounded-2xl p-5">
+            <p class="text-sm text-bosque font-medium">Acceso de {{ $proveedorDeLaClave }} a la app</p>
+            <p class="text-3xl font-bold text-bosque tracking-widest mt-2">{{ $claveGenerada }}</p>
+            <p class="text-xs text-piedra mt-2">Entra con su cédula y esta clave. Anótala y entrégasela ahora: no se guarda y no se vuelve a mostrar.</p>
+            <button type="button" wire:click="cerrarClave" class="mt-3 text-sm text-campo hover:underline">Ya la anoté</button>
+        </div>
+    @endif
+
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold text-bosque">Proveedores</h1>

@@ -1,7 +1,7 @@
 <div class="max-w-2xl mx-auto space-y-5">
     <div class="flex items-center justify-between gap-4">
         <div>
-            <a href="{{ route('movilidades.index') }}" wire:navigate class="text-sm text-piedra hover:text-bosque">&larr; Movilidades</a>
+            <a href="{{ route('acopios.index') }}" wire:navigate class="text-sm text-piedra hover:text-bosque">&larr; Acopios</a>
             <h1 class="text-2xl font-semibold text-bosque mt-1">{{ $movilidad->nombre }}</h1>
             <p class="text-sm text-piedra">{{ $movilidad->rutaNombre ?? 'Sin ruta asignada' }}</p>
         </div>
@@ -74,14 +74,6 @@
                         @endcan
                     @endif
 
-                    @unless ($proveedor->cambioZonaPendiente)
-                        @can('create', App\Infrastructure\Proveedor\Models\SolicitudCambioZonaModel::class)
-                            <button type="button" wire:click="abrirCambioZona({{ $proveedor->proveedorId }})"
-                                    class="mt-2 text-xs text-piedra hover:text-campo underline decoration-dotted">
-                                Solicitar cambio de zona
-                            </button>
-                        @endcan
-                    @endunless
                 </div>
             @empty
                 <div class="bg-white rounded-2xl border border-linea shadow-sm p-8 text-center text-piedra text-sm">
@@ -117,54 +109,4 @@
         </div>
     @endif
 
-    @if ($proveedorParaCambioZona !== null)
-        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-            <div class="fixed inset-0 bg-black/50" wire:click="cancelarCambioZona"></div>
-            <div class="bg-white rounded-2xl p-6 z-10 w-full max-w-sm shadow-sm">
-                <h3 class="text-lg font-semibold text-bosque mb-1">Solicitar cambio de zona</h3>
-                <p class="text-sm text-piedra mb-4">Queda pendiente hasta que un administrador la apruebe. El proveedor no se mueve de ruta todavía.</p>
-
-                @if ($errorCambioZona !== '')
-                    <div class="mb-3 rounded-xl bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{{ $errorCambioZona }}</div>
-                @endif
-
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-bosque mb-1">Nueva zona</label>
-                        <select wire:model="rutaSolicitadaId" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
-                            <option value="">Seleccione...</option>
-                            @foreach ($rutasDisponibles as $ruta)
-                                <option value="{{ $ruta->id }}">{{ $ruta->nombre }}</option>
-                            @endforeach
-                        </select>
-                        @error('rutaSolicitadaId') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-bosque mb-1">Fecha del cambio</label>
-                        <input type="date" wire:model="fechaCambioZona" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
-                        @error('fechaCambioZona') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-bosque mb-1">Motivo (opcional)</label>
-                        <textarea wire:model="motivoCambioZona" rows="2"
-                                  class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo"
-                                  placeholder="Ej. el proveedor se muda a otra comunidad..."></textarea>
-                    </div>
-                </div>
-
-                <div class="mt-4 grid grid-cols-2 gap-2">
-                    <button type="button" wire:click="cancelarCambioZona"
-                            class="flex items-center justify-center rounded-xl border border-linea text-piedra py-3 text-sm font-semibold hover:bg-crema">
-                        Cancelar
-                    </button>
-                    <button type="button" wire:click="confirmarCambioZona"
-                            class="flex items-center justify-center rounded-xl bg-campo text-white py-3 text-sm font-semibold hover:bg-bosque">
-                        Enviar solicitud
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
 </div>

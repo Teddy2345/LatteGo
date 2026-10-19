@@ -18,6 +18,7 @@ final readonly class ProduccionData
         public ?int $jefaProduccionId,
         public ?string $observaciones,
         public ?int $productoId = null,
+        public array $resultados = [],
     ) {
     }
 
@@ -33,6 +34,7 @@ final readonly class ProduccionData
             jefaProduccionId: $produccion->jefaProduccionId,
             observaciones: $produccion->observaciones,
             productoId: $produccion->productoId,
+            resultados: $produccion->resultados,
         );
     }
 }

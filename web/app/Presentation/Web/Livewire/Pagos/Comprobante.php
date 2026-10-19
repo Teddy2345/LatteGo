@@ -9,11 +9,13 @@ use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Infrastructure\Pagos\Models\PagoModel;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.print')]
 final class Comprobante extends Component
 {
+    #[Locked]
     public int $pagoId;
 
     public function mount(int $pagoId): void

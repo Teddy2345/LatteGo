@@ -7,9 +7,11 @@ namespace App\Presentation\Web\Livewire\Proveedor;
 use App\Application\Proveedor\DTOs\ProveedorData;
 use App\Application\Proveedor\UseCases\ActualizarPrecioLitroGeneralUseCase;
 use App\Application\Proveedor\UseCases\CambiarEstadoProveedorUseCase;
+use App\Application\Proveedor\UseCases\CrearCuentaProveedorUseCase;
 use App\Application\Proveedor\UseCases\EliminarProveedorUseCase;
 use App\Application\Proveedor\UseCases\ListarProveedoresUseCase;
 use App\Domain\Proveedor\Exceptions\PrecioLitroInvalidoException;
+use App\Domain\Proveedor\Exceptions\ProveedorException;
 use App\Infrastructure\Proveedor\Models\ProveedorModel;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -28,6 +30,11 @@ final class Index extends Component
     public ?float $precioTemporada = null;
     public string $avisoPrecio = '';
     public string $errorPrecio = '';
+
+    /** Clave recien generada; se muestra una vez y no se guarda en claro. */
+    public string $claveGenerada = '';
+    public string $proveedorDeLaClave = '';
+    public string $errorCuenta = '';
 
     public function updatingBusqueda(): void
     {
@@ -93,6 +100,52 @@ final class Index extends Component
             : "Precio actualizado en {$actualizados} proveedores.";
     }
 
+    /**
+     * Abre la cuenta de la app del proveedor. La clave se muestra una sola
+     * vez en pantalla: no se guarda en claro en ningun lado, asi que si se
+     * pierde hay que restablecerla.
+     */
+    public function abrirCuentaApp(int $proveedorId, CrearCuentaProveedorUseCase $cuentas): void
+    {
+        $this->authorize('update', ProveedorModel::class);
+
+        $this->errorCuenta = '';
+
+        try {
+            $resultado = $cuentas->ejecutar($proveedorId);
+        } catch (ProveedorException $e) {
+            $this->errorCuenta = $e->getMessage();
+
+            return;
+        }
+
+        $this->claveGenerada = $resultado['clave'];
+        $this->proveedorDeLaClave = $resultado['proveedor']->nombre;
+    }
+
+    public function restablecerClaveApp(int $proveedorId, CrearCuentaProveedorUseCase $cuentas): void
+    {
+        $this->authorize('update', ProveedorModel::class);
+
+        $this->errorCuenta = '';
+
+        try {
+            $this->claveGenerada = $cuentas->restablecerClave($proveedorId);
+        } catch (ProveedorException $e) {
+            $this->errorCuenta = $e->getMessage();
+
+            return;
+        }
+
+        $this->proveedorDeLaClave = (string) ProveedorModel::query()->whereKey($proveedorId)->value('nombre');
+    }
+
+    public function cerrarClave(): void
+    {
+        $this->claveGenerada = '';
+        $this->proveedorDeLaClave = '';
+    }
+
     public function render(ListarProveedoresUseCase $listar): View
     {
         $query = ProveedorModel::query()->orderBy('nombre');
@@ -118,6 +171,7 @@ final class Index extends Component
                 precioLitro: (float) $m->precio_litro,
                 activo: (bool) $m->activo,
                 rutaId: $m->ruta_id,
+                tieneCuentaApp: $m->user_id !== null,
             );
         });
 

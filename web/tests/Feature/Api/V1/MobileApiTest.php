@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Infrastructure\Acopio\Models\AcopioModel;
+use App\Infrastructure\Movilidad\Models\MovilidadModel;
 use App\Infrastructure\Proveedor\Models\ProveedorModel;
 use App\Infrastructure\Proveedor\Models\RutaModel;
 use App\Models\User;
@@ -16,9 +17,25 @@ function autenticarMovil(string $rol = 'admin'): User
     $user = User::factory()->create();
     $user->assignRole($rol);
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
+
+    // Cada acopiador trabaja con la ruta de su movilidad: sin ella no atiende a nadie.
+    if ($rol === 'acopiador') {
+        $ruta = RutaModel::create(['nombre' => 'Ruta del acopiador '.$user->id]);
+        MovilidadModel::create(['nombre' => 'Camion '.$user->id, 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true, 'usuario_id' => $user->id]);
+    }
 
     return $user;
+}
+
+function rutaDelAcopiador(User $user): ?int
+{
+    return MovilidadModel::query()->where('usuario_id', $user->id)->value('ruta_id');
+}
+
+function moverAcopiadorA(User $user, RutaModel $ruta): void
+{
+    MovilidadModel::query()->where('usuario_id', $user->id)->update(['ruta_id' => $ruta->id]);
 }
 
 /**
@@ -26,7 +43,9 @@ function autenticarMovil(string $rol = 'admin'): User
  */
 function acopioMovilValido(array $sobrescribir = []): array
 {
-    $proveedor = ProveedorModel::factory()->create();
+    $proveedor = ProveedorModel::factory()->create([
+        'ruta_id' => MovilidadModel::query()->where('usuario_id', auth()->id())->value('ruta_id'),
+    ]);
 
     return array_merge([
         'request_id' => (string) Str::uuid(),
@@ -72,17 +91,21 @@ test('el administrador recibe todas las acciones disponibles', function () {
         ->toContain('acopio', 'consolidado', 'auditoria', 'proveedores', 'calidad', 'despachos', 'pagos');
 });
 
-test('el catalogo entrega proveedores activos y zonas sin exponer datos sensibles', function () {
-    autenticarMovil('acopiador');
-    ProveedorModel::factory()->count(2)->create(['activo' => true]);
-    ProveedorModel::factory()->create(['activo' => false]);
-    RutaModel::create(['nombre' => 'Zona Norte', 'activa' => true]);
+test('el catalogo entrega los proveedores activos de su ruta y las zonas sin exponer datos sensibles', function () {
+    $acopiador = autenticarMovil('acopiador');
+    $norte = RutaModel::create(['nombre' => 'Zona Norte', 'activa' => true]);
     RutaModel::create(['nombre' => 'Zona Sur', 'activa' => true]);
+    ProveedorModel::factory()->count(2)->create(['activo' => true, 'ruta_id' => rutaDelAcopiador($acopiador)]);
+    ProveedorModel::factory()->create(['activo' => false, 'ruta_id' => rutaDelAcopiador($acopiador)]);
+    ProveedorModel::factory()->create(['activo' => true, 'ruta_id' => $norte->id, 'nombre' => 'De otro camion']);
 
     $respuesta = $this->getJson('/api/v1/mobile/catalogo')
         ->assertOk()
+        ->assertJsonPath('data.sin_movilidad', false)
         ->assertJsonCount(2, 'data.proveedores')
-        ->assertJsonCount(2, 'data.zonas');
+        ->assertJsonMissing(['nombre' => 'De otro camion'])
+        // Las zonas son todas: sirven para pedir un traslado a cualquiera.
+        ->assertJsonCount(3, 'data.zonas');
 
     expect(array_keys($respuesta->json('data.proveedores.0')))->toBe(['id', 'nombre']);
 });
@@ -213,9 +236,10 @@ test('la auditoria queda cerrada para el acopiador', function () {
 });
 
 test('la ficha de proveedor entrega sus datos completos y el historial de litraje', function () {
-    autenticarMovil('acopiador');
+    $acopiador = autenticarMovil('acopiador');
     $zonaActual = RutaModel::create(['nombre' => 'Zona Huata Centro']);
     $zonaAnterior = RutaModel::create(['nombre' => 'Zona Huata Norte']);
+    moverAcopiadorA($acopiador, $zonaActual);
     $proveedor = ProveedorModel::factory()->create([
         'nombre' => 'Alejandra Centeno',
         'ruta_id' => $zonaActual->id,
@@ -243,15 +267,25 @@ test('la ficha de proveedor queda cerrada para quien no acopia ni ve reportes', 
     $this->getJson("/api/v1/mobile/proveedores/{$proveedor->id}")->assertForbidden();
 });
 
-test('solicitar un traslado de zona crea la solicitud pendiente para ese proveedor', function () {
-    autenticarMovil('acopiador');
-    $proveedor = ProveedorModel::factory()->create();
-    $nuevaZona = RutaModel::create(['nombre' => 'Zona Copacabana']);
+/** Deja autenticado al proveedor dueño de esa ficha, como lo hace su app. */
+function autenticarProveedor(ProveedorModel $proveedor): void
+{
+    app(RolePermissionSeeder::class)->run();
+    app(\App\Application\Proveedor\UseCases\CrearCuentaProveedorUseCase::class)->ejecutar($proveedor->id);
 
-    $this->postJson("/api/v1/mobile/proveedores/{$proveedor->id}/cambio-zona", [
+    app('auth')->forgetGuards();
+    Sanctum::actingAs(\App\Models\User::query()->findOrFail($proveedor->fresh()->user_id), ['*']);
+}
+
+test('el proveedor pide su traslado y queda pendiente de aprobacion', function () {
+    $proveedor = ProveedorModel::factory()->create(['cedula' => '5550001', 'activo' => true]);
+    $nuevaZona = RutaModel::create(['nombre' => 'Zona Copacabana']);
+    autenticarProveedor($proveedor);
+
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', [
         'ruta_solicitada_id' => $nuevaZona->id,
         'fecha_cambio' => '2026-09-15',
-        'motivo' => 'El proveedor se muda a otra comunidad.',
+        'motivo' => 'Me mudo a otra comunidad.',
     ])->assertCreated()->assertJsonPath('data.estado', 'pendiente');
 
     $this->assertDatabaseHas('solicitudes_cambio_zona', [
@@ -262,24 +296,75 @@ test('solicitar un traslado de zona crea la solicitud pendiente para ese proveed
 });
 
 test('no se puede solicitar un segundo traslado mientras el primero sigue pendiente', function () {
-    autenticarMovil('acopiador');
-    $proveedor = ProveedorModel::factory()->create();
+    $proveedor = ProveedorModel::factory()->create(['cedula' => '5550002', 'activo' => true]);
     $zona = RutaModel::create(['nombre' => 'Zona Copacabana']);
+    autenticarProveedor($proveedor);
     $payload = ['ruta_solicitada_id' => $zona->id, 'fecha_cambio' => '2026-09-15', 'motivo' => null];
 
-    $this->postJson("/api/v1/mobile/proveedores/{$proveedor->id}/cambio-zona", $payload)->assertCreated();
-    $this->postJson("/api/v1/mobile/proveedores/{$proveedor->id}/cambio-zona", $payload)
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', $payload)->assertCreated();
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', $payload)
         ->assertStatus(422)
         ->assertJsonPath('message', 'Este proveedor ya tiene una solicitud de cambio de zona pendiente de revision.');
 });
 
-test('quien no acopia no puede solicitar un traslado de zona', function () {
-    autenticarMovil('ventas');
-    $proveedor = ProveedorModel::factory()->create();
+test('el personal de la planta no pide traslados en nombre del proveedor', function () {
+    autenticarMovil('acopiador');
     $zona = RutaModel::create(['nombre' => 'Zona Copacabana']);
 
-    $this->postJson("/api/v1/mobile/proveedores/{$proveedor->id}/cambio-zona", [
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', [
         'ruta_solicitada_id' => $zona->id,
         'fecha_cambio' => '2026-09-15',
     ])->assertForbidden();
+
+    $this->assertDatabaseCount('solicitudes_cambio_zona', 0);
+});
+
+test('la ficha del acopiador avisa del traslado pendiente que pidio el proveedor', function () {
+    $acopiador = autenticarMovil('acopiador');
+    $proveedor = ProveedorModel::factory()->create(['cedula' => '5550003', 'activo' => true, 'ruta_id' => rutaDelAcopiador($acopiador)]);
+    $zona = RutaModel::create(['nombre' => 'Zona Copacabana']);
+
+    $this->getJson("/api/v1/mobile/proveedores/{$proveedor->id}")
+        ->assertOk()
+        ->assertJsonPath('data.cambio_zona_pendiente', null);
+
+    autenticarProveedor($proveedor);
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', [
+        'ruta_solicitada_id' => $zona->id,
+        'fecha_cambio' => '2026-09-15',
+    ])->assertCreated();
+
+    app('auth')->forgetGuards();
+    Sanctum::actingAs($acopiador, ['*']);
+    $this->getJson("/api/v1/mobile/proveedores/{$proveedor->id}")
+        ->assertOk()
+        ->assertJsonPath('data.cambio_zona_pendiente.zona', 'Zona Copacabana')
+        ->assertJsonPath('data.cambio_zona_pendiente.fecha_cambio', '2026-09-15');
+});
+
+test('no se puede pedir el traslado a la zona en la que ya esta el proveedor', function () {
+    $zona = RutaModel::create(['nombre' => 'Zona Huata Centro']);
+    $proveedor = ProveedorModel::factory()->create(['cedula' => '5550004', 'activo' => true, 'ruta_id' => $zona->id]);
+    autenticarProveedor($proveedor);
+
+    $this->postJson('/api/v1/mobile/proveedor/cambio-zona', [
+        'ruta_solicitada_id' => $zona->id,
+        'fecha_cambio' => '2026-09-15',
+    ])->assertStatus(422)->assertJsonPath('message', 'El proveedor ya pertenece a esa zona.');
+
+    $this->assertDatabaseMissing('solicitudes_cambio_zona', ['proveedor_id' => $proveedor->id]);
+});
+
+test('admin y supervisor entran a la app solo con contraseña: el codigo se pide unicamente en la web', function () {
+    app(RolePermissionSeeder::class)->run();
+    $admin = User::factory()->create(['password' => bcrypt('password'), 'two_factor_confirmed_at' => now()]);
+    $admin->assignRole('admin');
+
+    $token = $this->postJson('/api/v1/login', [
+        'email' => $admin->email,
+        'password' => 'password',
+        'device_name' => 'Ecolactea Android',
+    ])->assertCreated()->json('data.token');
+
+    $this->withToken($token)->getJson('/api/v1/pagos')->assertOk();
 });

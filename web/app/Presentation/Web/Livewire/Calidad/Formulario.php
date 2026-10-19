@@ -6,14 +6,18 @@ namespace App\Presentation\Web\Livewire\Calidad;
 
 use App\Application\Acopio\UseCases\ListarAcopiosUseCase;
 use App\Application\Acopio\UseCases\ObtenerAcopioUseCase;
+use App\Application\Calidad\DTOs\CalidadData;
 use App\Application\Calidad\DTOs\RegistrarCalidadData;
 use App\Application\Calidad\UseCases\AnalizarFotoCalidadUseCase;
+use App\Application\Calidad\UseCases\ListarCalidadUseCase;
 use App\Application\Calidad\UseCases\RegistrarCalidadUseCase;
+use App\Application\Proveedor\UseCases\ListarProveedoresUseCase;
 use App\Domain\Calidad\Exceptions\CalidadException;
 use App\Infrastructure\Calidad\Models\CalidadModel;
 use Illuminate\Http\UploadedFile;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -61,7 +65,12 @@ final class Formulario extends Component
     #[Validate('nullable|image|max:5120')]
     public $fotoEquipo = null;
 
-    /** Ruta ya guardada de forma permanente (tras "Analizar foto"), para no subirla dos veces. */
+    /**
+     * Ruta ya guardada de forma permanente (tras "Analizar foto"), para no
+     * subirla dos veces. Bloqueada: es la evidencia del analisis y no debe
+     * poder apuntarse desde el navegador a la foto de otro.
+     */
+    #[Locked]
     public ?string $fotoPath = null;
 
     public string $mensajeOcr = '';
@@ -154,10 +163,21 @@ final class Formulario extends Component
         $this->redirect(route('calidad.index'), navigate: true);
     }
 
-    public function render(ListarAcopiosUseCase $listarAcopios): View
-    {
+    public function render(
+        ListarAcopiosUseCase $listarAcopios,
+        ListarCalidadUseCase $listarCalidad,
+        ListarProveedoresUseCase $listarProveedores,
+    ): View {
+        // Solo se ofrecen las entregas que aun no tienen su analisis.
+        $analizados = array_flip(array_map(static fn (CalidadData $c): int => $c->acopioId, $listarCalidad->ejecutar()));
+
         return view('livewire.calidad.formulario', [
-            'acopios' => $listarAcopios->ejecutar(),
+            'acopios' => array_values(array_filter(
+                $listarAcopios->ejecutar(),
+                static fn ($acopio): bool => ! isset($analizados[$acopio->id]),
+            )),
+            // Sin el nombre, elegir la entrega por su numero es a ciegas.
+            'proveedores' => collect($listarProveedores->ejecutar())->keyBy('id'),
         ]);
     }
 }

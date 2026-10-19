@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Motocarga con porongos de leche">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F6F3"/>
+      <stop offset="1" stop-color="#DDE9E2"/>
+    </linearGradient>
+    <linearGradient id="porongo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D9E3DD"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#fondo)"/>
+  <circle cx="62" cy="50" r="24" fill="#E4C58A" opacity=".45"/>
+  <!-- cordillera -->
+  <path d="M250 170 L320 70 L392 170 Z" fill="#CFE0D5" opacity=".8"/>
+  <path d="M307 88 L320 70 L333 88 L326 84 L320 90 L314 84 Z" fill="#FFFFFF"/>
+  <path d="M0 176 Q70 158 140 170 T280 166 T400 172 V250 H0 Z" fill="#E7EEE3"/>
+  <ellipse cx="205" cy="208" rx="150" ry="10" fill="#173E32" opacity=".12"/>
+  <!-- porongos -->
+  <g stroke="#B9C8BE" stroke-width="1.5">
+    <rect x="78" y="80" width="32" height="46" rx="7" fill="url(#porongo)"/>
+    <rect x="86" y="70" width="16" height="12" rx="3" fill="#EEF3EF"/>
+    <rect x="120" y="80" width="32" height="46" rx="7" fill="url(#porongo)"/>
+    <rect x="128" y="70" width="16" height="12" rx="3" fill="#EEF3EF"/>
+    <rect x="162" y="80" width="32" height="46" rx="7" fill="url(#porongo)"/>
+    <rect x="170" y="70" width="16" height="12" rx="3" fill="#EEF3EF"/>
+  </g>
+  <!-- caja de carga -->
+  <rect x="62" y="108" width="150" height="66" rx="6" fill="#356B50"/>
+  <g stroke="#173E32" stroke-width="2" opacity=".3">
+    <line x1="62" y1="130" x2="212" y2="130"/>
+    <line x1="62" y1="152" x2="212" y2="152"/>
+  </g>
+  <text x="137" y="148" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" letter-spacing="3" fill="#E4C58A">HUATA</text>
+  <!-- union caja-moto -->
+  <rect x="204" y="162" width="58" height="9" rx="3" fill="#173E32"/>
+  <!-- moto -->
+  <path d="M226 132 Q250 121 278 127 L276 138 Q250 136 228 142 Z" fill="#173E32"/>
+  <path d="M270 122 Q292 110 308 125 L302 140 L272 138 Z" fill="#356B50"/>
+  <rect x="246" y="142" width="38" height="24" rx="5" fill="#68746A"/>
+  <path d="M226 160 H250" stroke="#8A9A8F" stroke-width="5" stroke-linecap="round"/>
+  <line x1="306" y1="116" x2="330" y2="186" stroke="#173E32" stroke-width="6" stroke-linecap="round"/>
+  <line x1="296" y1="102" x2="318" y2="110" stroke="#173E32" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="320" cy="126" r="7" fill="#E4C58A"/>
+  <path d="M306 170 Q330 148 354 170" fill="none" stroke="#356B50" stroke-width="6" stroke-linecap="round"/>
+  <!-- ruedas -->
+  <g fill="#173E32">
+    <circle cx="137" cy="188" r="20"/>
+    <circle cx="330" cy="188" r="20"/>
+  </g>
+  <g fill="#D5DED8">
+    <circle cx="137" cy="188" r="9"/>
+    <circle cx="330" cy="188" r="9"/>
+  </g>
+  <g fill="#173E32">
+    <circle cx="137" cy="188" r="3"/>
+    <circle cx="330" cy="188" r="3"/>
+  </g>
+</svg>

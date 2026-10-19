@@ -133,3 +133,31 @@ test('si falta stock de un insumo, la operacion lanza StockInsuficienteException
         insumosUtilizados: [new InsumoUtilizadoData(productoId: $cuajo->id, cantidad: 3)],
     )))->toThrow(StockInsuficienteException::class);
 });
+
+test('la produccion no puede dar entrada a un insumo ni gastar producto terminado como insumo', function () {
+    [$registrar, , $productoRepo, $movimientoRepo] = contextoIntegracionProduccion();
+    $alta = new RegistrarProductoUseCase($productoRepo);
+
+    $sal = $alta->ejecutar(new RegistrarProductoData(nombre: 'Sal fina', tipo: 'insumo', categoria: null, unidad: 'kilo', precioReferencia: 0, stockMinimo: null));
+    $queso = $alta->ejecutar(new RegistrarProductoData(nombre: 'Queso fresco', tipo: 'producto_terminado', categoria: null, unidad: 'pieza', precioReferencia: 20, stockMinimo: null));
+
+    expect(fn () => $registrar->ejecutar(new RegistrarProduccionData(
+        fecha: '2026-09-13',
+        litrosProcesados: 100.0,
+        quesosProducidos: 12,
+        jefaProduccionId: null,
+        observaciones: null,
+        productoId: $sal->id,
+    )))->toThrow(\App\Domain\Produccion\Exceptions\ProductoNoValidoParaProduccionException::class, 'Sal fina no es un producto terminado activo');
+
+    expect(fn () => $registrar->ejecutar(new RegistrarProduccionData(
+        fecha: '2026-09-13',
+        litrosProcesados: 100.0,
+        quesosProducidos: 12,
+        jefaProduccionId: null,
+        observaciones: null,
+        insumosUtilizados: [new InsumoUtilizadoData(productoId: $queso->id, cantidad: 1)],
+    )))->toThrow(\App\Domain\Produccion\Exceptions\ProductoNoValidoParaProduccionException::class, 'Queso fresco no es un insumo');
+
+    expect($movimientoRepo->stockDe($sal->id))->toBe(0.0);
+});

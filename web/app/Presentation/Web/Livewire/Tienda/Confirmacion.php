@@ -7,11 +7,13 @@ namespace App\Presentation\Web\Livewire\Tienda;
 use App\Application\Pedidos\UseCases\ObtenerPedidoUseCase;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.tienda')]
 final class Confirmacion extends Component
 {
+    #[Locked]
     public int $pedidoId;
 
     public function mount(int $pedido): void

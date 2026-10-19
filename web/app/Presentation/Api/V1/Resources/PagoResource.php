@@ -20,6 +20,9 @@ final class PagoResource extends JsonResource
             'proveedor_id' => $this->proveedorId,
             'semana_inicio' => $this->semanaInicio,
             'semana_fin' => $this->semanaFin,
+            // 0 es la planilla de la semana; 1, 2... los pagos complementarios.
+            'secuencia' => $this->secuencia,
+            'complementario' => $this->secuencia > 0,
             'total_litros' => $this->totalLitros,
             'precio_litro' => $this->precioLitro,
             'total_pagar' => $this->totalPagar,

@@ -14,6 +14,7 @@ final class RutaModel extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'paradas_referencia',
         'activa',
     ];
 
@@ -21,6 +22,7 @@ final class RutaModel extends Model
     {
         return [
             'activa' => 'boolean',
+            'paradas_referencia' => 'array',
         ];
     }
 

@@ -22,6 +22,11 @@ final class PedidoModel extends Model
     protected $table = 'pedidos';
 
     protected $fillable = [
+        'user_id',
+        'codigo',
+        'tipo_entrega',
+        'tipo_cliente',
+        'referencia_pago',
         'cliente_nombre',
         'cliente_telefono',
         'cliente_direccion',

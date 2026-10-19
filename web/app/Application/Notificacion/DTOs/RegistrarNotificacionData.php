@@ -17,6 +17,8 @@ final readonly class RegistrarNotificacionData
         public string $mensaje,
         public NivelNotificacion $nivel,
         public array $datos = [],
+        /** Para una sola persona; null = para todo el personal. */
+        public ?int $usuarioId = null,
     ) {
     }
 }

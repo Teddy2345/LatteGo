@@ -6,6 +6,8 @@ use App\Application\Acopio\DTOs\RegistrarAcopioData;
 use App\Application\Acopio\UseCases\RegistrarAcopioUseCase;
 use App\Domain\Acopio\Exceptions\PerdidaInvalidaException;
 use Tests\Support\InMemoryAcopioRepository;
+use Tests\Support\InMemoryCalidadRepository;
+use Tests\Support\InMemoryProveedorRepository;
 
 function datosAcopioValido(array $override = []): RegistrarAcopioData
 {
@@ -24,7 +26,7 @@ function datosAcopioValido(array $override = []): RegistrarAcopioData
 }
 
 test('registra un acopio pendiente de sincronizar', function () {
-    $useCase = new RegistrarAcopioUseCase(new InMemoryAcopioRepository());
+    $useCase = new RegistrarAcopioUseCase(new InMemoryAcopioRepository(), new InMemoryCalidadRepository(), new InMemoryProveedorRepository());
 
     $resultado = $useCase->ejecutar(datosAcopioValido());
 
@@ -34,7 +36,7 @@ test('registra un acopio pendiente de sincronizar', function () {
 });
 
 test('rechaza un acopio con perdida sin motivo', function () {
-    $useCase = new RegistrarAcopioUseCase(new InMemoryAcopioRepository());
+    $useCase = new RegistrarAcopioUseCase(new InMemoryAcopioRepository(), new InMemoryCalidadRepository(), new InMemoryProveedorRepository());
 
     $useCase->ejecutar(datosAcopioValido(['perdidaLitros' => 2.0]));
 })->throws(PerdidaInvalidaException::class);

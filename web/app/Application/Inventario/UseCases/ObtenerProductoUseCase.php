@@ -34,6 +34,8 @@ final class ObtenerProductoUseCase
             categoria: $producto->categoria,
             unidad: $producto->unidad,
             precioReferencia: $producto->precioReferencia,
+            precioVecino: $producto->precioVecino,
+            precioProveedor: $producto->precioProveedor,
             stockMinimo: $producto->stockMinimo,
             stock: 0.0,
             stockBajo: false,

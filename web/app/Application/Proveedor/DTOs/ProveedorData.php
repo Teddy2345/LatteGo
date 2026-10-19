@@ -18,6 +18,7 @@ final readonly class ProveedorData
         public float $precioLitro,
         public bool $activo,
         public ?int $rutaId,
+        public bool $tieneCuentaApp = false,
     ) {
     }
 

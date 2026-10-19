@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Pedidos\Repositories;
 
+use App\Domain\Inventario\ValueObjects\TipoCliente;
 use App\Domain\Pedidos\Entities\ItemPedido;
 use App\Domain\Pedidos\Entities\Pedido;
 use App\Domain\Pedidos\Repositories\PedidoRepository;
 use App\Domain\Pedidos\ValueObjects\EstadoPedido;
 use App\Domain\Pedidos\ValueObjects\MetodoPago;
+use App\Domain\Pedidos\ValueObjects\TipoEntrega;
 use App\Infrastructure\Pedidos\Models\ItemPedidoModel;
 use App\Infrastructure\Pedidos\Models\PedidoModel;
 use DateTimeImmutable;
@@ -81,6 +83,16 @@ final class EloquentPedidoRepository implements PedidoRepository
             ->all();
     }
 
+    public function cantidadReservada(int $productoId, ?int $exceptoPedidoId = null): float
+    {
+        return round((float) ItemPedidoModel::query()
+            ->join('pedidos', 'pedidos.id', '=', 'items_pedido.pedido_id')
+            ->where('items_pedido.producto_id', $productoId)
+            ->where('pedidos.estado', EstadoPedido::Confirmado->value)
+            ->when($exceptoPedidoId !== null, fn (Builder $q) => $q->where('pedidos.id', '!=', $exceptoPedidoId))
+            ->sum('items_pedido.cantidad'), 2);
+    }
+
     /**
      * @return Builder<PedidoModel>
      */
@@ -105,6 +117,11 @@ final class EloquentPedidoRepository implements PedidoRepository
             'metodo_pago' => $pedido->metodoPago?->value,
             'monto_cobrado' => $pedido->montoCobrado,
             'fecha_entrega' => $pedido->fechaEntrega?->format('Y-m-d'),
+            'user_id' => $pedido->usuarioId,
+            'codigo' => $pedido->codigo,
+            'tipo_entrega' => $pedido->tipoEntrega?->value,
+            'tipo_cliente' => $pedido->tipoCliente->value,
+            'referencia_pago' => $pedido->referenciaPago,
         ];
     }
 
@@ -128,6 +145,11 @@ final class EloquentPedidoRepository implements PedidoRepository
             metodoPago: $modelo->metodo_pago === null ? null : MetodoPago::from($modelo->metodo_pago),
             montoCobrado: $modelo->monto_cobrado === null ? null : (float) $modelo->monto_cobrado,
             fechaEntrega: $modelo->fecha_entrega === null ? null : new DateTimeImmutable($modelo->fecha_entrega->format('Y-m-d')),
+            usuarioId: $modelo->user_id,
+            codigo: $modelo->codigo,
+            tipoEntrega: TipoEntrega::desde($modelo->tipo_entrega),
+            tipoCliente: TipoCliente::desde($modelo->tipo_cliente),
+            referenciaPago: $modelo->referencia_pago,
         );
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Presentation\Api\V1\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
-use App\Infrastructure\Auth\Models\DispositivoDosFactoresModel;
 use App\Presentation\Api\V1\Support\VinculacionDosFactores;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,67 +12,78 @@ use Illuminate\Http\Request;
 /**
  * Campana de verificacion en dos pasos de la app movil.
  *
- * El telefono solo entrega el codigo si su dueño lo vinculo antes desde la
- * pantalla de 2FA de la web. Sin esa vinculacion se responde 403 aunque la
+ * El telefono solo entrega el codigo si su dueño lo vinculo antes: la app
+ * genera un codigo de vinculacion y el dueño lo escribe en la pantalla de
+ * 2FA de la web. Sin esa vinculacion se responde 403 aunque la
  * sesion movil sea valida: de lo contrario bastaria la contraseña para
  * obtener el segundo factor y el 2FA no protegeria nada.
  */
 final class DosFactoresController extends Controller
 {
+    /**
+     * Identificador propio del telefono. La app lo crea una vez y lo guarda,
+     * de modo que la vinculacion no se pierda al volver a iniciar sesion.
+     * Una app anterior no lo manda y se sigue atendiendo por token.
+     */
+    private function dispositivoId(Request $request): ?string
+    {
+        $id = trim((string) $request->header('X-Dispositivo'));
+
+        return preg_match('/^[A-Za-z0-9-]{8,64}$/', $id) === 1 ? $id : null;
+    }
+
     public function estado(Request $request): JsonResponse
     {
         $user = $request->user();
-        $dispositivo = VinculacionDosFactores::dispositivoDelToken($user, $request->user()->currentAccessToken()->id);
+        $dispositivo = VinculacionDosFactores::dispositivoVinculado($user, $user->currentAccessToken()->id, $this->dispositivoId($request));
 
         return response()->json([
             'data' => [
                 'requiere_2fa' => $user->hasAnyRole(['admin', 'supervisor']),
                 'dos_factores_activo' => $user->two_factor_confirmed_at !== null,
+                // Ya se pulso "Habilitar" en la web aunque falte confirmar:
+                // desde aqui se puede vincular y usar la campana para confirmar.
+                'dos_factores_iniciado' => $user->two_factor_secret !== null,
                 'vinculado' => $dispositivo !== null,
                 'vinculado_en' => $dispositivo?->vinculado_en?->format('Y-m-d H:i'),
             ],
         ]);
     }
 
-    public function vincular(Request $request): JsonResponse
+    /**
+     * El telefono pide un codigo de vinculacion para mostrarlo en la campana.
+     * Su dueño lo escribe en la pantalla de 2FA de la web, y recien ahi el
+     * telefono queda vinculado.
+     */
+    public function codigoVinculacion(Request $request): JsonResponse
     {
-        $datos = $request->validate(['codigo' => ['required', 'string', 'max:16']]);
         $user = $request->user();
 
         if ($user->two_factor_secret === null) {
             return response()->json([
-                'message' => 'Primero activa la verificación en dos pasos desde la web.',
-            ], 422);
-        }
-
-        if (! VinculacionDosFactores::consumir($user, $datos['codigo'])) {
-            return response()->json([
-                'message' => 'El código de vinculación no es válido o ya venció. Genera uno nuevo en la web.',
+                'message' => 'Primero pulsa «Habilitar 2FA» en la web.',
             ], 422);
         }
 
         $token = $user->currentAccessToken();
+        $codigo = VinculacionDosFactores::generarCodigoParaTelefono($user, $token->id, $token->name, $this->dispositivoId($request));
 
-        DispositivoDosFactoresModel::query()->updateOrCreate(
-            ['token_id' => $token->id],
-            [
-                'user_id' => $user->id,
-                'nombre' => $token->name,
-                'vinculado_en' => now(),
+        return response()->json([
+            'data' => [
+                'codigo' => $codigo,
+                'vence_en_segundos' => VinculacionDosFactores::VIGENCIA_MINUTOS * 60,
             ],
-        );
-
-        return response()->json(['data' => ['vinculado' => true]], 201);
+        ], 201);
     }
 
     public function codigo(Request $request): JsonResponse
     {
         $user = $request->user();
-        $dispositivo = VinculacionDosFactores::dispositivoDelToken($user, $request->user()->currentAccessToken()->id);
+        $dispositivo = VinculacionDosFactores::dispositivoVinculado($user, $user->currentAccessToken()->id, $this->dispositivoId($request));
 
         if ($dispositivo === null) {
             return response()->json([
-                'message' => 'Este teléfono no está vinculado. Vincúlalo desde la pantalla de 2FA en la web.',
+                'message' => 'Este teléfono no está vinculado. Genera el código aquí y escríbelo en la web.',
             ], 403);
         }
 
@@ -97,10 +107,13 @@ final class DosFactoresController extends Controller
 
     public function desvincular(Request $request): JsonResponse
     {
-        DispositivoDosFactoresModel::query()
-            ->where('user_id', $request->user()->id)
-            ->where('token_id', $request->user()->currentAccessToken()->id)
-            ->delete();
+        $dispositivo = VinculacionDosFactores::dispositivoVinculado(
+            $request->user(),
+            $request->user()->currentAccessToken()->id,
+            $this->dispositivoId($request),
+        );
+
+        $dispositivo?->delete();
 
         return response()->json(['data' => ['vinculado' => false]]);
     }

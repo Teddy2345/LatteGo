@@ -85,6 +85,48 @@ test('un precio de cero o negativo se rechaza', function () {
     expect((float) ProveedorModel::query()->value('precio_litro'))->toBe(3.00);
 });
 
+test('el formulario muestra el precio general sin dejar editarlo', function () {
+    ProveedorModel::factory()->create(['precio_litro' => 1.70]);
+
+    Livewire::actingAs(usuarioPrecio('admin'))
+        ->test(\App\Presentation\Web\Livewire\Proveedor\Formulario::class)
+        ->assertSee('S/ 1.70')
+        ->assertSee('Es el mismo para todos')
+        ->assertDontSeeHtml('wire:model="precioLitro"');
+});
+
+test('un proveedor creado desde el formulario recibe el precio general', function () {
+    ProveedorModel::factory()->create(['precio_litro' => 2.10]);
+    ProveedorModel::factory()->create(['precio_litro' => 2.10]);
+
+    Livewire::actingAs(usuarioPrecio('admin'))
+        ->test(\App\Presentation\Web\Livewire\Proveedor\Formulario::class)
+        ->set('nombre', 'Rosa Quispe')
+        ->set('cedula', '9988776')
+        ->set('litrosProm', 30)
+        ->call('guardar')
+        ->assertRedirect(route('proveedores.index'));
+
+    expect((float) ProveedorModel::query()->where('cedula', '9988776')->value('precio_litro'))->toBe(2.10);
+});
+
+test('editar un proveedor desde el formulario conserva su precio', function () {
+    $proveedor = ProveedorModel::factory()->create(['precio_litro' => 1.70, 'cedula' => '5544332']);
+
+    Livewire::actingAs(usuarioPrecio('admin'))
+        ->test(\App\Presentation\Web\Livewire\Proveedor\Formulario::class, ['proveedorId' => $proveedor->id])
+        ->set('nombre', 'Nombre Corregido')
+        ->call('guardar')
+        ->assertRedirect(route('proveedores.index'));
+
+    expect((float) $proveedor->fresh()->precio_litro)->toBe(1.70)
+        ->and($proveedor->fresh()->nombre)->toBe('Nombre Corregido');
+});
+
+test('sin proveedores todavia, el precio arranca en 1.70', function () {
+    expect(app(\App\Application\Proveedor\UseCases\ObtenerPrecioLitroVigenteUseCase::class)->ejecutar())->toBe(1.70);
+});
+
 test('quien no edita proveedores no puede cambiar el precio', function () {
     ProveedorModel::factory()->create(['precio_litro' => 3.00]);
 

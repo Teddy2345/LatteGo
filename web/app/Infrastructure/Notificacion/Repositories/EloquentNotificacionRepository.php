@@ -21,14 +21,16 @@ final class EloquentNotificacionRepository implements NotificacionRepository
             'mensaje' => $notificacion->mensaje,
             'nivel' => $notificacion->nivel->value,
             'datos' => $notificacion->datos,
+            'user_id' => $notificacion->usuarioId,
         ]);
 
         return $this->aDominio($modelo);
     }
 
-    public function listarRecientes(int $limite): array
+    public function listarRecientes(int $limite, ?int $usuarioId = null, bool $soloPropias = false): array
     {
         return NotificacionModel::query()
+            ->tap(fn ($q) => $this->acotarA($q, $usuarioId, $soloPropias))
             ->latest('id')
             ->limit($limite)
             ->get()
@@ -57,11 +59,27 @@ final class EloquentNotificacionRepository implements NotificacionRepository
         );
     }
 
-    public function contarNoLeidasPara(int $userId): int
+    public function contarNoLeidasPara(int $userId, bool $soloPropias = false): int
     {
         return NotificacionModel::query()
+            ->tap(fn ($q) => $this->acotarA($q, $userId, $soloPropias))
             ->whereDoesntHave('lecturas', fn ($q) => $q->where('user_id', $userId))
             ->count();
+    }
+
+    /**
+     * El personal ve las alertas de la planta y las suyas; el proveedor,
+     * solo las suyas: las de la planta no le incumben.
+     */
+    private function acotarA($query, ?int $usuarioId, bool $soloPropias): void
+    {
+        if ($usuarioId === null) {
+            return;
+        }
+
+        $soloPropias
+            ? $query->where('user_id', $usuarioId)
+            : $query->where(fn ($q) => $q->whereNull('user_id')->orWhere('user_id', $usuarioId));
     }
 
     private function aDominio(NotificacionModel $modelo): Notificacion
@@ -74,6 +92,7 @@ final class EloquentNotificacionRepository implements NotificacionRepository
             nivel: NivelNotificacion::from($modelo->nivel),
             datos: $modelo->datos ?? [],
             creadaEn: $modelo->created_at === null ? null : new DateTimeImmutable($modelo->created_at->format('Y-m-d H:i:s')),
+            usuarioId: $modelo->user_id,
         );
     }
 }

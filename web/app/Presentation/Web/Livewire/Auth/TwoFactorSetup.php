@@ -8,6 +8,7 @@ use App\Infrastructure\Auth\Models\DispositivoDosFactoresModel;
 use App\Presentation\Api\V1\Support\VinculacionDosFactores;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
@@ -24,7 +25,10 @@ final class TwoFactorSetup extends Component
 
     public string $aviso = '';
 
-    public ?string $codigoVinculacion = null;
+    /** El codigo que muestra la campana del telefono que se quiere vincular. */
+    public string $codigoTelefono = '';
+
+    public string $errorVinculacion = '';
 
     public function habilitar(EnableTwoFactorAuthentication $enable): void
     {
@@ -43,13 +47,36 @@ final class TwoFactorSetup extends Component
     }
 
     /**
-     * Codigo corto para vincular el telefono: se dicta del navegador a la
-     * app y sirve una sola vez. A partir de ahi ese telefono recibe el
-     * codigo de 6 digitos en su campana.
+     * Vincula el telefono cuyo codigo se escribio aqui: la app lo genera en
+     * la campana, sirve una sola vez y solo para un telefono de esta misma
+     * cuenta. A partir de ahi ese telefono recibe el codigo de 6 digitos.
      */
-    public function generarCodigoVinculacion(): void
+    public function vincularTelefono(): void
     {
-        $this->codigoVinculacion = VinculacionDosFactores::generarCodigo(Auth::user());
+        $this->errorVinculacion = '';
+        $this->aviso = '';
+
+        $limite = 'vincular-telefono:'.Auth::id();
+
+        if (RateLimiter::tooManyAttempts($limite, 5)) {
+            $this->errorVinculacion = 'Demasiados intentos. Espera un minuto y genera un código nuevo en la app.';
+
+            return;
+        }
+
+        RateLimiter::hit($limite, 60);
+
+        $telefono = VinculacionDosFactores::vincularConCodigo(Auth::user(), $this->codigoTelefono);
+
+        if ($telefono === null) {
+            $this->errorVinculacion = 'El código no es válido o ya venció. Genera uno nuevo en la campana de la app.';
+
+            return;
+        }
+
+        RateLimiter::clear($limite);
+        $this->codigoTelefono = '';
+        $this->aviso = "Teléfono vinculado ({$telefono->nombre}). Ya puedes ver tu código en la campana de la app.";
     }
 
     /** Desvincular un telefono perdido o que ya no es de confianza. */

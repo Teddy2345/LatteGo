@@ -118,12 +118,22 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-linea">
                         <div>
                             <label class="block text-sm font-medium text-bosque mb-1">Método de pago</label>
-                            <select wire:model="metodoPago" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                            <select wire:model.live="metodoPago" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
                                 <option value="efectivo">Efectivo</option>
+                                <option value="yape">Yape</option>
                                 <option value="transferencia">Transferencia</option>
                                 <option value="qr">QR</option>
                             </select>
                         </div>
+                        @if ($metodoPago !== 'efectivo')
+                            <div>
+                                <label class="block text-sm font-medium text-bosque mb-1">Número de operación</label>
+                                <input type="text" maxlength="40" wire:model="referenciaPago" placeholder="Ej. 01234567"
+                                       class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                                <p class="text-xs text-piedra mt-1">El que muestra la confirmación del pago. Sirve para cotejarlo después.</p>
+                                @error('referenciaPago') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        @endif
                         <div>
                             <label class="block text-sm font-medium text-bosque mb-1">Monto cobrado</label>
                             <input type="number" step="0.01" min="0.01" wire:model="montoCobrado"
@@ -144,6 +154,16 @@
                 @endcan
             @endif
         </div>
+
+        {{-- Confirmar reserva la mercaderia: si no se va a entregar, hay que poder liberarla. --}}
+        @can('revisar', App\Infrastructure\Pedidos\Models\PedidoModel::class)
+            <div class="flex justify-end">
+                <button wire:click="cancelar" wire:confirm="¿Cancelar este pedido? La mercadería reservada vuelve a quedar libre."
+                        class="px-4 py-2 rounded-xl text-sm font-medium border border-linea text-bosque hover:bg-crema">
+                    Cancelar pedido
+                </button>
+            </div>
+        @endcan
     @endif
 
     @if ($pedido->estado === 'entregado')
@@ -162,6 +182,9 @@
                 <div>
                     <p class="text-piedra text-xs">Método de pago</p>
                     <p class="text-bosque capitalize">{{ $pedido->metodoPago }}</p>
+                    @if ($pedido->referenciaPago)
+                        <p class="text-piedra text-xs mt-0.5">Operación {{ $pedido->referenciaPago }}</p>
+                    @endif
                 </div>
                 <div>
                     <p class="text-piedra text-xs">Monto cobrado</p>

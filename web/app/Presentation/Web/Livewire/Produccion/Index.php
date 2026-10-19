@@ -7,6 +7,7 @@ namespace App\Presentation\Web\Livewire\Produccion;
 use App\Application\Produccion\DTOs\ProduccionData;
 use App\Application\Produccion\UseCases\ListarProduccionUseCase;
 use App\Infrastructure\Produccion\Models\ProduccionModel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -27,7 +28,14 @@ final class Index extends Component
     {
         $paginador = ProduccionModel::query()->orderByDesc('fecha')->paginate(8);
 
-        $mapped = $paginador->getCollection()->map(function (ProduccionModel $m): ProduccionData {
+        $resultados = DB::table('produccion_productos as pp')
+            ->join('productos as p', 'p.id', '=', 'pp.producto_id')
+            ->join('unidades_medida as u', 'u.id', '=', 'pp.unidad_medida_id')
+            ->whereIn('pp.produccion_id', $paginador->getCollection()->pluck('id'))
+            ->select('pp.produccion_id', 'p.nombre as producto', 'u.nombre as unidad', 'pp.cantidad_planificada', 'pp.cantidad_producida')
+            ->get()->groupBy('produccion_id');
+
+        $mapped = $paginador->getCollection()->map(function (ProduccionModel $m) use ($resultados): ProduccionData {
             return new ProduccionData(
                 id: $m->id,
                 fecha: $m->fecha->format('Y-m-d'),
@@ -37,6 +45,7 @@ final class Index extends Component
                 rendimientoEnRangoEsperado: true,
                 jefaProduccionId: $m->jefa_produccion_id,
                 observaciones: $m->observaciones,
+                resultados: ($resultados[$m->id] ?? collect())->map(fn ($r) => (array) $r)->all(),
             );
         });
 

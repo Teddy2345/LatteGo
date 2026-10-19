@@ -27,6 +27,8 @@ final class ProductoModel extends Model
         'descripcion',
         'unidad',
         'precio_referencia',
+        'precio_vecino',
+        'precio_proveedor',
         'stock_minimo',
         'activo',
     ];
@@ -35,6 +37,8 @@ final class ProductoModel extends Model
     {
         return [
             'precio_referencia' => 'decimal:2',
+            'precio_vecino' => 'decimal:2',
+            'precio_proveedor' => 'decimal:2',
             'stock_minimo' => 'decimal:2',
             'activo' => 'boolean',
         ];

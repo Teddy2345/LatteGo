@@ -13,7 +13,9 @@ use App\Domain\Inventario\Exceptions\StockInsuficienteException;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoProducto;
 use App\Domain\Produccion\Entities\Produccion;
+use App\Domain\Produccion\Exceptions\ProductoNoValidoParaProduccionException;
 use App\Domain\Produccion\Repositories\ProduccionRepository;
 use App\Domain\Produccion\ValueObjects\LitrosProcesados;
 use App\Domain\Produccion\ValueObjects\QuesosProducidos;
@@ -77,6 +79,12 @@ final class RegistrarProduccionUseCase
             throw new ProductoNoEncontradoException("No existe un producto con id {$datos->productoId}.");
         }
 
+        if ($producto->tipo !== TipoProducto::ProductoTerminado || ! $producto->activo) {
+            throw new ProductoNoValidoParaProduccionException(
+                "{$producto->nombre} no es un producto terminado activo: la producción no puede darle entrada."
+            );
+        }
+
         $this->movimientos->guardar(MovimientoInventario::produccion(
             productoId: $producto->id,
             fecha: new DateTimeImmutable($datos->fecha),
@@ -94,6 +102,12 @@ final class RegistrarProduccionUseCase
 
         if ($producto === null) {
             throw new ProductoNoEncontradoException("No existe un insumo con id {$insumo->productoId}.");
+        }
+
+        if ($producto->tipo !== TipoProducto::Insumo) {
+            throw new ProductoNoValidoParaProduccionException(
+                "{$producto->nombre} no es un insumo: no se puede descontar como material de la producción."
+            );
         }
 
         $cantidad = new CantidadProducto($insumo->cantidad);

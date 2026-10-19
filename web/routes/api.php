@@ -8,14 +8,21 @@ use App\Presentation\Api\V1\Controllers\CalidadController;
 use App\Presentation\Api\V1\Controllers\DespachoController;
 use App\Presentation\Api\V1\Controllers\Mobile\AcopioMovilController;
 use App\Presentation\Api\V1\Controllers\Mobile\AuditoriaController;
+use App\Presentation\Api\V1\Controllers\Mobile\CalidadMovilController;
 use App\Presentation\Api\V1\Controllers\Mobile\CatalogoController;
 use App\Presentation\Api\V1\Controllers\Mobile\ConsolidadoController;
 use App\Presentation\Api\V1\Controllers\Mobile\DosFactoresController;
 use App\Presentation\Api\V1\Controllers\Mobile\InventarioMovilController;
+use App\Presentation\Api\V1\Controllers\Mobile\MiCuentaProveedorController;
+use App\Presentation\Api\V1\Controllers\Mobile\MiRutaController;
+use App\Presentation\Api\V1\Controllers\Mobile\NotificacionMovilController;
 use App\Presentation\Api\V1\Controllers\Mobile\ProveedorMovilController;
+use App\Presentation\Api\V1\Controllers\Mobile\RepartoController;
+use App\Presentation\Api\V1\Controllers\Mobile\TiendaProveedorController;
 use App\Presentation\Api\V1\Controllers\PagoController;
 use App\Presentation\Api\V1\Controllers\ProduccionController;
 use App\Presentation\Api\V1\Controllers\ProveedorController;
+use App\Presentation\Web\Controllers\DocumentoPdfController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,16 +84,60 @@ Route::prefix('v1')->name('api.v1.')->middleware('auth:sanctum')->group(function
         Route::get('acopios/{acopio}', [AcopioMovilController::class, 'show'])->name('acopios.show');
 
         Route::get('proveedores/{proveedor}', [ProveedorMovilController::class, 'show'])->name('proveedores.show');
-        Route::post('proveedores/{proveedor}/cambio-zona', [ProveedorMovilController::class, 'solicitarCambioZona'])->name('proveedores.cambio-zona');
 
         /*
          * Campana de verificacion en dos pasos: solo responde con el codigo
          * al telefono que su dueño vinculo antes desde la web.
          */
         Route::get('2fa/estado', [DosFactoresController::class, 'estado'])->name('2fa.estado');
-        Route::post('2fa/vincular', [DosFactoresController::class, 'vincular'])->name('2fa.vincular');
+        Route::post('2fa/codigo-vinculacion', [DosFactoresController::class, 'codigoVinculacion'])
+            ->middleware('throttle:10,1')
+            ->name('2fa.codigo-vinculacion');
         Route::get('2fa/codigo', [DosFactoresController::class, 'codigo'])->name('2fa.codigo');
         Route::delete('2fa/vincular', [DosFactoresController::class, 'desvincular'])->name('2fa.desvincular');
+
+        Route::get('mi-ruta', [MiRutaController::class, 'datos'])->name('mi-ruta');
+
+        /*
+         * Calidad desde el telefono: las entregas que faltan analizar y el
+         * analisis con la foto del LactoScan como evidencia.
+         */
+        Route::get('calidad/pendientes', [CalidadMovilController::class, 'pendientes'])->name('calidad.pendientes');
+        Route::post('calidad', [CalidadMovilController::class, 'store'])
+            ->middleware('throttle:60,1')->name('calidad.store');
+
+        /*
+         * Lo del proveedor en su propia app: su tienda al precio que le
+         * toca, sus pedidos y la leche que lleva entregada esta semana.
+         */
+        Route::prefix('proveedor')->name('proveedor.')->group(function () {
+            Route::get('tienda', [TiendaProveedorController::class, 'productos'])->name('tienda');
+            Route::post('pedidos', [TiendaProveedorController::class, 'crearPedido'])
+                ->middleware('throttle:20,1')->name('pedidos.store');
+            Route::get('pedidos', [TiendaProveedorController::class, 'misPedidos'])->name('pedidos.index');
+            Route::get('mi-cuenta', [MiCuentaProveedorController::class, 'resumen'])->name('mi-cuenta');
+            Route::get('calidad', [MiCuentaProveedorController::class, 'calidad'])->name('calidad');
+            Route::get('zonas', [MiCuentaProveedorController::class, 'zonas'])->name('zonas');
+            Route::post('cambio-zona', [MiCuentaProveedorController::class, 'solicitarCambioZona'])
+                ->middleware('throttle:10,1')->name('cambio-zona');
+        });
+        /*
+         * Reparto: lo que hay que llevar hoy, con la direccion y el monto
+         * exacto a cobrar, y la entrega con su forma de pago.
+         */
+        Route::prefix('reparto')->name('reparto.')->group(function () {
+            Route::get('pedidos', [RepartoController::class, 'pendientes'])->name('pedidos');
+            Route::post('pedidos/{pedido}/entregar', [RepartoController::class, 'entregar'])
+                ->middleware('throttle:30,1')->name('entregar');
+        });
+
+        // La boleta del pedido, para el telefono: la ruta web es de sesion
+        // y el token de la app no entra por ahi.
+        Route::get('comprobantes/{comprobante}.pdf', [DocumentoPdfController::class, 'comprobante'])
+            ->name('comprobantes.pdf');
+
+        Route::get('notificaciones', [NotificacionMovilController::class, 'index'])->name('notificaciones');
+        Route::patch('notificaciones/{notificacion}/leida', [NotificacionMovilController::class, 'marcarLeida'])->name('notificaciones.leida');
 
         Route::get('consolidado', ConsolidadoController::class)->name('consolidado');
         Route::get('auditoria', AuditoriaController::class)->name('auditoria');

@@ -17,6 +17,7 @@ use App\Domain\Pedidos\Exceptions\EstadoPedidoInvalidoException;
 use Tests\Support\InMemoryMovimientoInventarioRepository;
 use Tests\Support\InMemoryPedidoRepository;
 use Tests\Support\InMemoryProductoRepository;
+use Tests\Support\InMemoryTransactionManager;
 
 function crearPedidoConfirmadoDePrueba(): array
 {
@@ -25,9 +26,9 @@ function crearPedidoConfirmadoDePrueba(): array
     $pedidoRepo = new InMemoryPedidoRepository();
 
     $crear = new CrearPedidoUseCase($pedidoRepo, $productoRepo, $movimientoRepo);
-    $confirmar = new ConfirmarPedidoUseCase($pedidoRepo);
+    $confirmar = new ConfirmarPedidoUseCase($pedidoRepo, $movimientoRepo);
     $asignar = new AsignarRepartidorUseCase($pedidoRepo);
-    $entregar = new EntregarPedidoUseCase($pedidoRepo);
+    $entregar = new EntregarPedidoUseCase($pedidoRepo, $movimientoRepo, new InMemoryTransactionManager());
 
     $queso = (new RegistrarProductoUseCase($productoRepo))->ejecutar(new RegistrarProductoData(
         nombre: 'Queso fresco',
@@ -79,12 +80,15 @@ test('asignar un repartidor y entregar deja constancia del cobro', function () {
         metodoPago: 'transferencia',
         montoCobrado: 40,
         fechaEntrega: '2026-09-15',
+        // Lo que no es efectivo deja numero de operacion para cotejarlo.
+        referenciaPago: 'OP-99887766',
     ));
 
     expect($entregado->estado)->toBe('entregado')
         ->and($entregado->repartidorId)->toBe(7)
         ->and($entregado->metodoPago)->toBe('transferencia')
         ->and($entregado->montoCobrado)->toBe(40.0)
+        ->and($entregado->referenciaPago)->toBe('OP-99887766')
         ->and($entregado->fechaEntrega)->toBe('2026-09-15');
 });
 

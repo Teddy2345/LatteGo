@@ -20,6 +20,27 @@ trait InteractuaConCarrito
         return session('carrito', []);
     }
 
+    /**
+     * Ajusta lo que escribio el visitante a lo que se puede entregar: en
+     * productos por pieza (o sobre, bolsa…) no hay fracciones, asi que se
+     * redondea a la unidad, con un minimo de una.
+     */
+    private function cantidadEntregable(ListarProductosConStockUseCase $listar, int $productoId, float $cantidad): float
+    {
+        if (! is_finite($cantidad) || $cantidad <= 0) {
+            return 0.0;
+        }
+
+        foreach ($listar->ejecutar(soloActivos: true, tipo: TipoProducto::ProductoTerminado) as $producto) {
+            if ($producto->id === $productoId) {
+                return $producto->seVendePorUnidadEntera() ? max(1.0, round($cantidad)) : round($cantidad, 2);
+            }
+        }
+
+        // Fuera del catalogo publico: resolverCarrito ya lo ignora.
+        return 0.0;
+    }
+
     private function guardarCarrito(array $carrito): void
     {
         session(['carrito' => array_filter($carrito, static fn (float $cantidad): bool => $cantidad > 0)]);

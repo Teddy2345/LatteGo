@@ -10,9 +10,10 @@ final readonly class LitrosProcesados
 {
     public float $valor;
 
-    public function __construct(float $valor)
+    public function __construct(float $valor, bool $permitirCero = false)
     {
-        if ($valor <= 0.0) {
+        // Un lote que solo usa insumos de Almacen no procesa leche de acopio.
+        if (!is_finite($valor) || $valor < 0.0 || (!$permitirCero && $valor == 0.0)) {
             throw new LitrosProcesadosInvalidosException('Los litros procesados deben ser mayores a 0.');
         }
 

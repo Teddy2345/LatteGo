@@ -7,6 +7,8 @@ namespace Tests\Support;
 use App\Domain\Calidad\Entities\Calidad;
 use App\Domain\Calidad\Repositories\CalidadRepository;
 use App\Domain\Calidad\ValueObjects\MotivoRechazo;
+use App\Domain\Calidad\ValueObjects\SancionAplicada;
+use DateTimeImmutable;
 
 final class InMemoryCalidadRepository implements CalidadRepository
 {
@@ -63,11 +65,52 @@ final class InMemoryCalidadRepository implements CalidadRepository
         ));
     }
 
+    public function existeParaAcopio(int $acopioId): bool
+    {
+        foreach ($this->analisis as $calidad) {
+            if ($calidad->acopioId === $acopioId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function contarAdulteracionesPrevias(int $proveedorId): int
     {
         return count(array_filter(
             $this->analisis,
             static fn (Calidad $c): bool => $c->proveedorId === $proveedorId && $c->motivoRechazo === MotivoRechazo::Adulteracion,
         ));
+    }
+
+    public function acopiosConAguaAnadida(array $acopioIds): array
+    {
+        $ids = [];
+
+        foreach ($this->analisis as $calidad) {
+            if ($calidad->motivoRechazo === MotivoRechazo::Adulteracion && in_array($calidad->acopioId, $acopioIds, true)) {
+                $ids[$calidad->acopioId] = $calidad->acopioId;
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    public function proveedoresSuspendidosEntre(DateTimeImmutable $inicio, DateTimeImmutable $fin): array
+    {
+        $ids = [];
+
+        foreach ($this->analisis as $calidad) {
+            $fecha = $calidad->fecha->format('Y-m-d');
+
+            if ($calidad->sancionAplicada === SancionAplicada::SuspensionSemana
+                && $fecha >= $inicio->format('Y-m-d')
+                && $fecha <= $fin->format('Y-m-d')) {
+                $ids[$calidad->proveedorId] = $calidad->proveedorId;
+            }
+        }
+
+        return array_values($ids);
     }
 }

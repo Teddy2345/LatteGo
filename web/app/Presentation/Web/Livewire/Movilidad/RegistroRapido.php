@@ -9,9 +9,10 @@ use App\Application\Acopio\UseCases\RegistrarAcopioUseCase;
 use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Domain\Acopio\Exceptions\AcopioException;
 use App\Infrastructure\Acopio\Models\AcopioModel;
-use App\Infrastructure\Movilidad\Models\MovilidadModel;
+use App\Presentation\Support\AlcanceMovilidades;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -23,7 +24,9 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 final class RegistroRapido extends Component
 {
+    #[Locked]
     public int $movilidadId;
+    #[Locked]
     public int $proveedorId;
     public string $proveedorNombre = '';
 
@@ -36,16 +39,14 @@ final class RegistroRapido extends Component
     {
         $this->authorize('create', AcopioModel::class);
 
-        $user = auth()->user();
+        $movilidad = AlcanceMovilidades::propia(auth()->user(), $movilidadId);
+        $proveedor = $obtener->ejecutar($proveedorId);
 
-        if (! $user->can('reportes.ver')) {
-            $movilidad = MovilidadModel::query()->findOrFail($movilidadId);
-            abort_if($movilidad->usuario_id !== $user->id, 403, 'Esta movilidad no te fue asignada.');
-        }
+        AlcanceMovilidades::asegurarProveedorDelRecorrido($movilidad, $proveedor->rutaId);
 
         $this->movilidadId = $movilidadId;
         $this->proveedorId = $proveedorId;
-        $this->proveedorNombre = $obtener->ejecutar($proveedorId)->nombre;
+        $this->proveedorNombre = $proveedor->nombre;
     }
 
     public function registrar(ObtenerProveedorUseCase $obtenerProveedor, RegistrarAcopioUseCase $registrar): void

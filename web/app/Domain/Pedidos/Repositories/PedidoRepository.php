@@ -29,4 +29,13 @@ interface PedidoRepository
      * @return Pedido[]
      */
     public function listarPorRepartidor(int $repartidorId): array;
+
+    /**
+     * Cuanto de ese producto esta comprometido en pedidos confirmados que
+     * todavia no se entregaron. Solo reservan los confirmados: un pedido
+     * pendiente de la tienda publica aun no fue revisado por ventas, y si
+     * reservara, bastaria llenar la tienda de pedidos falsos para agotar el
+     * almacen.
+     */
+    public function cantidadReservada(int $productoId, ?int $exceptoPedidoId = null): float;
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    La foto del LactoScan se guarda en la caché de la app y se le pasa a la
+    cámara por este proveedor: así ninguna otra app ve el resto de archivos.
+-->
+<paths>
+    <cache-path name="capturas" path="capturas/" />
+</paths>

@@ -65,6 +65,9 @@ class RolePermissionSeeder extends Seeder
         'repartidor' => [
             'pedidos.repartir',
         ],
+        // El proveedor solo usa la app: compra a su precio, sigue sus
+        // entregas y pide su cambio de zona. No abre nada de la planta.
+        'proveedor' => [],
     ];
 
     public function run(): void

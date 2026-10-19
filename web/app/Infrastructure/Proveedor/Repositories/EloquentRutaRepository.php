@@ -16,7 +16,7 @@ final class EloquentRutaRepository implements RutaRepository
             ->where('activa', true)
             ->orderBy('nombre')
             ->get()
-            ->map(fn (RutaModel $modelo) => new Ruta(id: $modelo->id, nombre: $modelo->nombre))
+            ->map(fn (RutaModel $modelo) => $this->aEntidad($modelo))
             ->all();
     }
 
@@ -25,7 +25,19 @@ final class EloquentRutaRepository implements RutaRepository
         return RutaModel::query()
             ->orderBy('nombre')
             ->get()
-            ->map(fn (RutaModel $modelo) => new Ruta(id: $modelo->id, nombre: $modelo->nombre))
+            ->map(fn (RutaModel $modelo) => $this->aEntidad($modelo))
             ->all();
+    }
+
+    private function aEntidad(RutaModel $modelo): Ruta
+    {
+        return new Ruta(
+            id: $modelo->id,
+            nombre: $modelo->nombre,
+            paradasReferencia: array_values(array_filter(
+                (array) ($modelo->paradas_referencia ?? []),
+                static fn ($parada): bool => is_string($parada) && trim($parada) !== '',
+            )),
+        );
     }
 }

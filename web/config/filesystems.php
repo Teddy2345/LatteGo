@@ -43,7 +43,10 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Relativa a proposito: la planta se abre por localhost, por la
+            // IP del equipo o por la del telefono, y una URL fija con APP_URL
+            // dejaria las fotos rotas en cuanto cambia la red.
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

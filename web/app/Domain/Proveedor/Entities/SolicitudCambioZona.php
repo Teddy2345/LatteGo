@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Proveedor\Entities;
 
 use App\Domain\Proveedor\Exceptions\SolicitudYaRevisadaException;
+use App\Domain\Proveedor\Exceptions\ZonaSolicitadaIgualException;
 use App\Domain\Proveedor\ValueObjects\EstadoSolicitudCambioZona;
 use DateTimeImmutable;
 
@@ -42,6 +43,10 @@ final class SolicitudCambioZona
         ?string $motivo,
         int $solicitadoPor,
     ): self {
+        if ($rutaActualId === $rutaSolicitadaId) {
+            throw new ZonaSolicitadaIgualException('El proveedor ya pertenece a esa zona.');
+        }
+
         return new self(
             id: null,
             proveedorId: $proveedorId,

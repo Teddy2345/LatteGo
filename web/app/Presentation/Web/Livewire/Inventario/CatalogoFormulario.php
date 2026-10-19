@@ -14,6 +14,7 @@ use App\Infrastructure\Inventario\Models\ProductoModel;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -23,9 +24,15 @@ final class CatalogoFormulario extends Component
 {
     use WithFileUploads;
 
+    #[Locked]
     public ?int $productoId = null;
 
-    /** Ruta ya guardada de la foto; se conserva si no se sube una nueva. */
+    /**
+     * Ruta ya guardada de la foto; se conserva si no se sube una nueva.
+     * Bloqueada: al cambiar la foto se borra el archivo de esta ruta, asi
+     * que desde el navegador no se debe poder apuntar a otro archivo.
+     */
+    #[Locked]
     public ?string $fotoPath = null;
 
     #[Validate('required|string|max:120')]
@@ -42,6 +49,13 @@ final class CatalogoFormulario extends Component
 
     #[Validate('required|numeric|min:0')]
     public float $precioReferencia = 0.0;
+
+    /** Vacios = ese comprador paga el precio publico. */
+    #[Validate('nullable|numeric|min:0')]
+    public ?float $precioVecino = null;
+
+    #[Validate('nullable|numeric|min:0')]
+    public ?float $precioProveedor = null;
 
     #[Validate('nullable|numeric|min:0')]
     public ?float $stockMinimo = null;
@@ -72,6 +86,8 @@ final class CatalogoFormulario extends Component
         $this->categoria = $producto->categoria;
         $this->unidad = $producto->unidad;
         $this->precioReferencia = $producto->precioReferencia;
+        $this->precioVecino = $producto->precioVecino;
+        $this->precioProveedor = $producto->precioProveedor;
         $this->stockMinimo = $producto->stockMinimo;
         $this->descripcion = $producto->descripcion;
         $this->fotoPath = $producto->fotoPath;
@@ -94,6 +110,8 @@ final class CatalogoFormulario extends Component
                 categoria: $this->categoria,
                 unidad: $this->unidad,
                 precioReferencia: $this->precioReferencia,
+                precioVecino: $this->precioVecino,
+                precioProveedor: $this->precioProveedor,
                 stockMinimo: $this->stockMinimo,
                 descripcion: $this->descripcion,
                 fotoPath: $rutaFoto,
@@ -109,6 +127,8 @@ final class CatalogoFormulario extends Component
                 categoria: $this->categoria,
                 unidad: $this->unidad,
                 precioReferencia: $this->precioReferencia,
+                precioVecino: $this->precioVecino,
+                precioProveedor: $this->precioProveedor,
                 stockMinimo: $this->stockMinimo,
                 descripcion: $this->descripcion,
                 fotoPath: $rutaFoto,

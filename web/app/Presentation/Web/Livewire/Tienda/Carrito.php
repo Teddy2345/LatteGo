@@ -15,10 +15,10 @@ final class Carrito extends Component
 {
     use InteractuaConCarrito;
 
-    public function actualizar(int $productoId, string $cantidad): void
+    public function actualizar(int $productoId, string $cantidad, ListarProductosConStockUseCase $listar): void
     {
         $carrito = $this->carritoActual();
-        $valor = (float) str_replace(',', '.', $cantidad);
+        $valor = $this->cantidadEntregable($listar, $productoId, (float) str_replace(',', '.', $cantidad));
 
         if ($valor <= 0) {
             unset($carrito[$productoId]);

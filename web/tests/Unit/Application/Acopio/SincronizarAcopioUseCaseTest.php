@@ -7,10 +7,12 @@ use App\Application\Acopio\UseCases\RegistrarAcopioUseCase;
 use App\Application\Acopio\UseCases\SincronizarAcopioUseCase;
 use App\Domain\Acopio\Exceptions\AcopioNoEncontradoException;
 use Tests\Support\InMemoryAcopioRepository;
+use Tests\Support\InMemoryCalidadRepository;
+use Tests\Support\InMemoryProveedorRepository;
 
 test('sincronizar saca al acopio de la lista de pendientes', function () {
     $repositorio = new InMemoryAcopioRepository();
-    $registrar = new RegistrarAcopioUseCase($repositorio);
+    $registrar = new RegistrarAcopioUseCase($repositorio, new InMemoryCalidadRepository(), new InMemoryProveedorRepository());
     $sincronizar = new SincronizarAcopioUseCase($repositorio);
     $listarPendientes = new ListarAcopiosPendientesUseCase($repositorio);
 

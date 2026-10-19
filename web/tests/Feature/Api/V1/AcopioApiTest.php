@@ -15,7 +15,7 @@ function autenticarUsuarioApi(): User
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }

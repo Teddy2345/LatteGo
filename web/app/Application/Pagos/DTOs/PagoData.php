@@ -18,6 +18,7 @@ final readonly class PagoData
         public float $totalPagar,
         public ?string $fechaPago,
         public string $estado,
+        public int $secuencia = 0,
     ) {
     }
 
@@ -33,6 +34,7 @@ final readonly class PagoData
             totalPagar: $pago->totalPagar,
             fechaPago: $pago->fechaPago?->format('Y-m-d'),
             estado: $pago->estado->value,
+            secuencia: $pago->secuencia,
         );
     }
 }

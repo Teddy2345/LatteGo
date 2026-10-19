@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Inventario\DTOs;
 
+use App\Domain\Inventario\Entities\Producto;
+
 final readonly class ProductoStockData
 {
     public function __construct(
@@ -19,6 +21,13 @@ final readonly class ProductoStockData
         public bool $activo,
         public ?string $descripcion = null,
         public ?string $fotoPath = null,
+        public ?float $precioVecino = null,
+        public ?float $precioProveedor = null,
     ) {
+    }
+
+    public function seVendePorUnidadEntera(): bool
+    {
+        return Producto::unidadEsEntera($this->unidad);
     }
 }

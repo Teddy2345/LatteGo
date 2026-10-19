@@ -20,7 +20,8 @@ final class StoreAcopioMovilRequest extends FormRequest
             'request_id' => ['required', 'string', 'max:64'],
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,id'],
             'ruta_id' => ['nullable', 'integer', 'exists:rutas,id'],
-            'fecha' => ['required', 'date'],
+            // Un dia de margen: el telefono puede ir en otra zona horaria que el servidor.
+            'fecha' => ['required', 'date', 'before_or_equal:tomorrow'],
             'cantidad_litros' => ['required', 'numeric', 'min:0.01'],
             // La merma se descuenta de lo recibido, asi que nunca puede superarlo.
             'perdida_litros' => ['nullable', 'numeric', 'min:0', 'lte:cantidad_litros'],

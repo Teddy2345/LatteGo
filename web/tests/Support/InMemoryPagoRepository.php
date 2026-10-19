@@ -29,6 +29,7 @@ final class InMemoryPagoRepository implements PagoRepository
                 totalPagar: $pago->totalPagar,
                 fechaPago: $pago->fechaPago,
                 estado: $pago->estado,
+                secuencia: $pago->secuencia,
             )
             : $pago;
 
@@ -44,13 +45,25 @@ final class InMemoryPagoRepository implements PagoRepository
 
     public function buscarPorProveedorYSemana(int $proveedorId, DateTimeImmutable $semanaInicio): ?Pago
     {
-        foreach ($this->pagos as $pago) {
-            if ($pago->proveedorId === $proveedorId && $pago->semanaInicio == $semanaInicio) {
+        foreach ($this->listarPorProveedorYSemana($proveedorId, $semanaInicio) as $pago) {
+            if (! $pago->esComplementario()) {
                 return $pago;
             }
         }
 
         return null;
+    }
+
+    public function listarPorProveedorYSemana(int $proveedorId, DateTimeImmutable $semanaInicio): array
+    {
+        $pagos = array_values(array_filter(
+            $this->pagos,
+            static fn (Pago $p): bool => $p->proveedorId === $proveedorId && $p->semanaInicio == $semanaInicio,
+        ));
+
+        usort($pagos, static fn (Pago $a, Pago $b): int => $a->secuencia <=> $b->secuencia);
+
+        return $pagos;
     }
 
     public function listarTodos(): array

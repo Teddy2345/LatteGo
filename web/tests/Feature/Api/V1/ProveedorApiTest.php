@@ -15,7 +15,7 @@ function actuarComoUsuarioAutenticado(): User
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }
@@ -71,9 +71,34 @@ test('rechaza crear un proveedor con datos invalidos', function () {
         'nombre' => '',
         'cedula' => '123',
         'litros_prom' => -5,
-        'precio_litro' => 0,
     ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['nombre', 'cedula', 'litros_prom', 'precio_litro']);
+        ->assertJsonValidationErrors(['nombre', 'cedula', 'litros_prom']);
+});
+
+test('el precio por litro de un proveedor nuevo es el general, no el que se envie', function () {
+    actuarComoUsuarioAutenticado();
+    ProveedorModel::factory()->create(['precio_litro' => 1.70]);
+
+    $this->postJson('/api/v1/proveedores', [
+        'nombre' => 'Juan Mamani',
+        'cedula' => '7788991',
+        'litros_prom' => 40,
+        'precio_litro' => 9.99,
+    ])->assertCreated()
+        ->assertJsonPath('data.precio_litro', 1.7);
+});
+
+test('editar un proveedor por la api no cambia su precio por litro', function () {
+    actuarComoUsuarioAutenticado();
+    $proveedor = ProveedorModel::factory()->create(['precio_litro' => 1.70]);
+
+    $this->putJson("/api/v1/proveedores/{$proveedor->id}", [
+        'nombre' => 'Nombre Corregido',
+        'litros_prom' => 55,
+        'precio_litro' => 9.99,
+    ])->assertOk();
+
+    expect((float) $proveedor->fresh()->precio_litro)->toBe(1.70);
 });
 
 test('rechaza crear un proveedor con cedula duplicada', function () {

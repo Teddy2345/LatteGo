@@ -8,6 +8,7 @@ use App\Application\Inventario\DTOs\RegistrarProduccionProductoData;
 use App\Application\Inventario\UseCases\ListarProductosConStockUseCase;
 use App\Application\Inventario\UseCases\RegistrarProduccionProductoUseCase;
 use App\Domain\Inventario\Exceptions\InventarioException;
+use App\Domain\Inventario\ValueObjects\TipoProducto;
 use App\Infrastructure\Inventario\Models\MovimientoInventarioModel;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -69,7 +70,7 @@ final class Formulario extends Component
     public function render(ListarProductosConStockUseCase $listar): View
     {
         return view('livewire.inventario.formulario', [
-            'productos' => $listar->ejecutar(),
+            'productos' => $listar->ejecutar(soloActivos: true, tipo: TipoProducto::ProductoTerminado),
         ]);
     }
 }

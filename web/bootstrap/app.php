@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'ensure2fa' => EnsureTwoFactorForPrivilegedRoles::class,
+            // La cuenta del proveedor no abre el portal de la planta.
+            'solo-app' => App\Http\Middleware\SoloAppParaProveedores::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

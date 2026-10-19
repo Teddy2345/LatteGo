@@ -32,7 +32,6 @@ function rutasDelMenu(): array
         'dashboard' => '/dashboard',
         'proveedores' => '/proveedores',
         'cambios-zona' => '/proveedores/cambios-de-zona',
-        'movilidades' => '/movilidades',
         'acopios' => '/acopios',
         'calidad' => '/calidad',
         'produccion' => '/produccion',
@@ -48,10 +47,10 @@ dataset('accesos por rol', [
     // Supervisor: su razon de ser es la supervision, asi que alcanza en
     // lectura todas las areas operativas, no solo proveedores y almacen.
     'supervisor' => ['supervisor', [
-        'dashboard', 'proveedores', 'cambios-zona', 'movilidades', 'acopios',
+        'dashboard', 'proveedores', 'cambios-zona', 'acopios',
         'calidad', 'produccion', 'almacen', 'ventas', 'pedidos', 'pagos', 'notificaciones',
     ]],
-    'acopiador' => ['acopiador', ['dashboard', 'movilidades', 'acopios']],
+    'acopiador' => ['acopiador', ['dashboard', 'acopios']],
     'calidad' => ['calidad', ['dashboard', 'calidad']],
     'produccion' => ['produccion', ['dashboard', 'produccion', 'almacen']],
     'ventas' => ['ventas', ['dashboard', 'almacen', 'ventas', 'pedidos']],
@@ -72,7 +71,6 @@ test('cada rol alcanza exactamente las pantallas de su menu', function (string $
 test('el menu le ofrece al supervisor las areas que si puede abrir', function () {
     $this->actingAs(usuarioNavegacion('supervisor'))
         ->get('/dashboard')
-        ->assertSee('href="'.url('/movilidades').'"', false)
         ->assertSee('href="'.url('/acopios').'"', false)
         ->assertSee('href="'.url('/calidad').'"', false)
         ->assertSee('href="'.url('/produccion').'"', false)

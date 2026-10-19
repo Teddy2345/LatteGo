@@ -49,3 +49,28 @@ test('el repartidor ve el dashboard con el resumen de pedidos por estado', funct
         ->assertSee('Pedidos por estado')
         ->assertOk();
 });
+
+test('el dashboard del repartidor solo lista a los clientes de sus entregas', function () {
+    $repartidor = usuarioDashboard('repartidor');
+    $producto = ProductoModel::factory()->create(['tipo' => 'producto_terminado']);
+
+    foreach (['Cliente Asignado' => $repartidor->id, 'Cliente De Otro Reparto' => null] as $cliente => $asignado) {
+        $pedido = PedidoModel::factory()->confirmado()->create(['cliente_nombre' => $cliente, 'repartidor_id' => $asignado]);
+        $pedido->items()->create(['producto_id' => $producto->id, 'nombre_producto' => $producto->nombre, 'cantidad' => 1, 'precio_unitario' => 10]);
+    }
+
+    Livewire::actingAs($repartidor)
+        ->test(Index::class)
+        ->assertSee('Cliente Asignado')
+        ->assertDontSee('Cliente De Otro Reparto');
+});
+
+test('el dashboard del acopiador cuenta solo sus propios litros', function () {
+    $acopiador = usuarioDashboard('acopiador');
+    AcopioModel::factory()->create(['acopiador_id' => $acopiador->id, 'fecha' => now()->format('Y-m-d'), 'cantidad_litros' => 40, 'estado' => 'sincronizado']);
+    AcopioModel::factory()->create(['acopiador_id' => usuarioDashboard('acopiador')->id, 'fecha' => now()->format('Y-m-d'), 'cantidad_litros' => 500, 'estado' => 'sincronizado']);
+
+    Livewire::actingAs($acopiador)
+        ->test(Index::class)
+        ->assertViewHas('litrosSemana', 40.0);
+});

@@ -57,9 +57,12 @@
 
             <div>
                 <label class="block text-sm font-medium text-bosque mb-1">Precio por litro</label>
-                <input type="number" step="0.01" min="0.01" wire:model="precioLitro"
-                       class="w-full rounded-lg border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
-                @error('precioLitro') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                <div class="w-full rounded-lg border border-linea bg-crema px-3 py-2 text-sm text-bosque">
+                    S/ {{ number_format($precioVigente, 2) }}
+                </div>
+                <p class="text-xs text-piedra mt-1">
+                    Es el mismo para todos. Se cambia desde el listado, en «Precio por litro».
+                </p>
             </div>
 
             <div>

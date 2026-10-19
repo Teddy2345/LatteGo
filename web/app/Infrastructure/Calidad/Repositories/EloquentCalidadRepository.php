@@ -14,6 +14,7 @@ use App\Domain\Calidad\ValueObjects\PruebaAlcohol;
 use App\Domain\Calidad\ValueObjects\ResultadoCalidad;
 use App\Domain\Calidad\ValueObjects\SancionAplicada;
 use App\Infrastructure\Calidad\Models\CalidadModel;
+use DateTimeImmutable;
 
 final class EloquentCalidadRepository implements CalidadRepository
 {
@@ -74,12 +75,45 @@ final class EloquentCalidadRepository implements CalidadRepository
             ->all();
     }
 
+    public function existeParaAcopio(int $acopioId): bool
+    {
+        return CalidadModel::query()->where('acopio_id', $acopioId)->exists();
+    }
+
     public function contarAdulteracionesPrevias(int $proveedorId): int
     {
         return CalidadModel::query()
             ->where('proveedor_id', $proveedorId)
             ->where('motivo_rechazo', MotivoRechazo::Adulteracion->value)
             ->count();
+    }
+
+    public function acopiosConAguaAnadida(array $acopioIds): array
+    {
+        if ($acopioIds === []) {
+            return [];
+        }
+
+        return CalidadModel::query()
+            ->whereIn('acopio_id', $acopioIds)
+            ->where('motivo_rechazo', MotivoRechazo::Adulteracion->value)
+            ->pluck('acopio_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function proveedoresSuspendidosEntre(DateTimeImmutable $inicio, DateTimeImmutable $fin): array
+    {
+        return CalidadModel::query()
+            ->where('sancion_aplicada', SancionAplicada::SuspensionSemana->value)
+            ->whereBetween('fecha', [$inicio->format('Y-m-d'), $fin->format('Y-m-d')])
+            ->pluck('proveedor_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function aDominio(CalidadModel $modelo): Calidad

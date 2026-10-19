@@ -16,7 +16,7 @@ function autenticarUsuarioPago(): User
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }
@@ -101,4 +101,27 @@ test('devuelve 404 al mostrar un pago inexistente', function () {
     autenticarUsuarioPago();
 
     $this->getJson('/api/v1/pagos/999999')->assertNotFound();
+});
+
+test('un acopio que llega despues de pagar la semana genera un pago complementario', function () {
+    autenticarUsuarioPago();
+    $proveedor = ProveedorModel::factory()->create(['precio_litro' => 1.70]);
+    AcopioModel::factory()->sincronizado()->create(['proveedor_id' => $proveedor->id, 'fecha' => '2024-01-04', 'cantidad_litros' => 80]);
+
+    $planilla = $this->postJson('/api/v1/pagos/generar-planilla', ['fecha_referencia' => '2024-01-04'])->json('data.0');
+    $this->patchJson("/api/v1/pagos/{$planilla['id']}/pagar")->assertOk();
+
+    // El telefono sincroniza tarde un acopio de esa misma semana.
+    AcopioModel::factory()->sincronizado()->create(['proveedor_id' => $proveedor->id, 'fecha' => '2024-01-06', 'cantidad_litros' => 20]);
+
+    $this->postJson('/api/v1/pagos/generar-planilla', ['fecha_referencia' => '2024-01-04'])
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.complementario', true)
+        ->assertJsonPath('data.0.secuencia', 1)
+        ->assertJsonPath('data.0.total_litros', 20)
+        ->assertJsonPath('data.0.total_pagar', 34);
+
+    $this->assertDatabaseHas('pagos', ['id' => $planilla['id'], 'total_litros' => 80, 'estado' => 'pagado', 'secuencia' => 0]);
+    expect(\App\Infrastructure\Pagos\Models\PagoModel::query()->where('proveedor_id', $proveedor->id)->count())->toBe(2);
 });

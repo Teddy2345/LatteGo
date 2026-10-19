@@ -23,6 +23,8 @@ final readonly class MovimientoInventarioData
         public ?string $cliente,
         public ?string $observaciones,
         public ?string $lote = null,
+        public ?string $tipoCliente = null,
+        public ?int $pedidoId = null,
     ) {
     }
 
@@ -43,6 +45,8 @@ final readonly class MovimientoInventarioData
             cliente: $movimiento->cliente,
             observaciones: $movimiento->observaciones,
             lote: $movimiento->lote,
+            tipoCliente: $movimiento->tipoCliente?->value,
+            pedidoId: $movimiento->pedidoId,
         );
     }
 }

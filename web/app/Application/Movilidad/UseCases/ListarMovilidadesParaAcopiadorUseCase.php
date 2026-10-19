@@ -79,6 +79,7 @@ final class ListarMovilidadesParaAcopiadorUseCase
                     proveedoresAtendidos: $atendidos,
                     litrosRecolectadosHoy: round($litros, 2),
                     progresoPorcentaje: $total > 0 ? (int) round(min($atendidos, $total) / $total * 100) : 0,
+                    usuarioId: $movilidad->usuarioId,
                 );
             },
             $usuarioId === null

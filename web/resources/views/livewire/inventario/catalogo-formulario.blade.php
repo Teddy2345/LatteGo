@@ -43,9 +43,10 @@
                 @error('unidad') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-bosque mb-1">Precio referencia</label>
+                <label class="block text-sm font-medium text-bosque mb-1">Precio público</label>
                 <input type="number" step="0.01" min="0" wire:model="precioReferencia"
                        class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                <p class="text-xs text-piedra mt-1">El que ve la tienda y paga quien viene de otro distrito.</p>
                 @error('precioReferencia') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
@@ -59,7 +60,31 @@
 
         @if ($tipo === 'producto_terminado')
             <div class="border-t border-linea pt-5 space-y-5">
-                <p class="text-xs text-piedra">Foto y descripción se muestran en la tienda web al público.</p>
+                <div>
+                    <h2 class="text-sm font-medium text-bosque">Precio según a quién se le venda</h2>
+                    <p class="text-xs text-piedra mt-1">
+                        Déjalos vacíos y ese comprador paga el precio público. Se aplican en la venta de planta,
+                        donde quien atiende elige el tipo de cliente; la tienda web siempre muestra el público.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-bosque mb-1">Precio vecino de Huata</label>
+                        <input type="number" step="0.01" min="0" wire:model="precioVecino" placeholder="Igual al público"
+                               class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                        @error('precioVecino') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-bosque mb-1">Precio proveedor</label>
+                        <input type="number" step="0.01" min="0" wire:model="precioProveedor" placeholder="Igual al público"
+                               class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                        <p class="text-xs text-piedra mt-1">Para quien entrega su leche a la planta.</p>
+                        @error('precioProveedor') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <p class="text-xs text-piedra border-t border-linea pt-5">Foto y descripción se muestran en la tienda web al público.</p>
 
                 <div>
                     <label class="block text-sm font-medium text-bosque mb-1">Descripción (opcional)</label>

@@ -7,6 +7,7 @@ namespace App\Infrastructure\Inventario\Repositories;
 use App\Domain\Inventario\Entities\MovimientoInventario;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoCliente;
 use App\Domain\Inventario\ValueObjects\TipoMovimiento;
 use App\Infrastructure\Inventario\Models\MovimientoInventarioModel;
 use DateTimeImmutable;
@@ -22,6 +23,7 @@ final class EloquentMovimientoInventarioRepository implements MovimientoInventar
         $modelo->fill([
             'producto_id' => $movimiento->productoId,
             'produccion_id' => $movimiento->produccionId,
+            'pedido_id' => $movimiento->pedidoId,
             'tipo' => $movimiento->tipo->value,
             'fecha' => $movimiento->fecha->format('Y-m-d'),
             'cantidad' => $movimiento->cantidad->valor,
@@ -30,6 +32,7 @@ final class EloquentMovimientoInventarioRepository implements MovimientoInventar
             'precio_unitario' => $movimiento->precioUnitario,
             'total' => $movimiento->total(),
             'cliente' => $movimiento->cliente,
+            'tipo_cliente' => $movimiento->tipoCliente?->value,
             'observaciones' => $movimiento->observaciones,
             'usuario_id' => $movimiento->usuarioId,
             'request_id' => $movimiento->requestId,
@@ -137,6 +140,8 @@ final class EloquentMovimientoInventarioRepository implements MovimientoInventar
             requestId: $modelo->request_id,
             lote: $modelo->lote,
             produccionId: $modelo->produccion_id,
+            pedidoId: $modelo->pedido_id,
+            tipoCliente: $modelo->tipo_cliente === null ? null : TipoCliente::from($modelo->tipo_cliente),
         );
     }
 }
