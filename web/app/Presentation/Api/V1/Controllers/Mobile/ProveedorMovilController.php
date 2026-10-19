@@ -10,10 +10,12 @@ use App\Application\Proveedor\DTOs\CrearSolicitudCambioZonaData;
 use App\Application\Proveedor\UseCases\CrearSolicitudCambioZonaUseCase;
 use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Domain\Proveedor\Repositories\RutaRepository;
+use App\Domain\Proveedor\Repositories\SolicitudCambioZonaRepository;
 use App\Http\Controllers\Controller;
 use App\Infrastructure\Acopio\Models\AcopioModel;
 use App\Infrastructure\Proveedor\Models\SolicitudCambioZonaModel;
 use App\Presentation\Api\V1\Requests\StoreSolicitudCambioZonaMovilRequest;
+use App\Presentation\Support\AlcanceProveedores;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -30,11 +32,14 @@ final class ProveedorMovilController extends Controller
         ObtenerProveedorUseCase $obtener,
         ListarAcopiosPorProveedorUseCase $historial,
         RutaRepository $rutas,
+        SolicitudCambioZonaRepository $solicitudes,
     ): JsonResponse {
         $this->authorize('viewAny', AcopioModel::class);
 
         $datos = $obtener->ejecutar($proveedor);
+        abort_unless(AlcanceProveedores::puedeAtender(request()->user(), $datos->id, $datos->rutaId), 403, 'Ese proveedor no pertenece a tu ruta.');
         $nombresRuta = $this->nombresPorRuta($rutas);
+        $pendiente = $solicitudes->listarPendientesIndexadasPorProveedor()[$proveedor] ?? null;
 
         return response()->json([
             'data' => [
@@ -48,6 +53,12 @@ final class ProveedorMovilController extends Controller
                 'activo' => $datos->activo,
                 'ruta_id' => $datos->rutaId,
                 'zona' => $datos->rutaId === null ? null : ($nombresRuta[$datos->rutaId] ?? null),
+                // Mientras haya un traslado sin revisar no se puede pedir otro;
+                // la app lo muestra en lugar de ofrecer el cambio.
+                'cambio_zona_pendiente' => $pendiente === null ? null : [
+                    'zona' => $nombresRuta[$pendiente->rutaSolicitadaId] ?? null,
+                    'fecha_cambio' => $pendiente->fechaCambio->format('Y-m-d'),
+                ],
                 'historial' => array_map(
                     static fn (AcopioData $acopio): array => [
                         'id' => $acopio->id,
@@ -69,8 +80,12 @@ final class ProveedorMovilController extends Controller
         int $proveedor,
         StoreSolicitudCambioZonaMovilRequest $request,
         CrearSolicitudCambioZonaUseCase $crear,
+        ObtenerProveedorUseCase $obtener,
     ): JsonResponse {
         $this->authorize('create', SolicitudCambioZonaModel::class);
+
+        $datos = $obtener->ejecutar($proveedor);
+        abort_unless(AlcanceProveedores::puedeAtender($request->user(), $datos->id, $datos->rutaId), 403, 'Ese proveedor no pertenece a tu ruta.');
 
         $solicitud = $crear->ejecutar(new CrearSolicitudCambioZonaData(
             proveedorId: $proveedor,

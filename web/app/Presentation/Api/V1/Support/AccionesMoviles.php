@@ -56,6 +56,18 @@ final class AccionesMoviles
             $acciones[] = 'pagos';
         }
 
+        if ($user->can('pedidos.repartir')) {
+            $acciones[] = 'reparto';
+        }
+
+        // El proveedor no tiene permisos de planta: su app se arma a
+        // partir del rol, que es lo que lo liga a su ficha.
+        if ($user->hasRole('proveedor')) {
+            $acciones[] = 'tienda_proveedor';
+            $acciones[] = 'mi_cuenta_proveedor';
+            $acciones[] = 'mis_pedidos';
+        }
+
         return $acciones;
     }
 

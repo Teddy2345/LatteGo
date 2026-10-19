@@ -11,7 +11,7 @@ final class NotificacionModel extends Model
 {
     protected $table = 'notificaciones';
 
-    protected $fillable = ['tipo', 'titulo', 'mensaje', 'nivel', 'datos'];
+    protected $fillable = ['user_id', 'tipo', 'titulo', 'mensaje', 'nivel', 'datos'];
 
     protected function casts(): array
     {

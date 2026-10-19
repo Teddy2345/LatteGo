@@ -1,8 +1,18 @@
 <div class="max-w-4xl mx-auto space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-semibold text-bosque">Costeo de producción</h1>
-            <p class="text-sm text-piedra mt-1">{{ $costo->fecha }} — {{ number_format($costo->litrosProcesados, 2) }} L procesados, {{ $costo->quesosProducidos }} quesos obtenidos.</p>
+            <h1 class="text-2xl font-semibold text-bosque">Costeo de producción #{{ $produccionId }}</h1>
+            @if ($recetas)
+                <p class="text-sm text-campo">{{ count($recetas) === 1 ? 'Receta' : 'Recetas' }}: {{ implode(' · ', $recetas) }}</p>
+            @endif
+            <p class="text-sm text-piedra mt-1">
+                {{ $costo->fecha }} — {{ number_format($costo->litrosProcesados, 2) }} L procesados,
+                @forelse ($resultados as $r)
+                    {{ $r['producto'] }}: {{ number_format((float) $r['cantidad_producida'], 2) }} {{ $r['unidad'] }} obtenidos.
+                @empty
+                    {{ $costo->quesosProducidos }} quesos obtenidos.
+                @endforelse
+            </p>
         </div>
         <a href="{{ route('produccion.index') }}" wire:navigate class="text-sm text-piedra hover:underline">
             &larr; Volver al listado
@@ -12,7 +22,9 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white rounded-2xl border border-linea shadow-sm p-5">
             <p class="text-xs uppercase tracking-wide text-piedra font-medium">Costo de leche</p>
-            @if ($costo->costoLeche === null)
+            @if ($costo->litrosProcesados == 0)
+                <p class="text-sm text-piedra mt-2">Sin consumo de leche de acopio. Los insumos de Almacén se detallan abajo.</p>
+            @elseif ($costo->costoLeche === null)
                 <p class="text-sm text-piedra mt-2">No disponible — no hay acopios sincronizados con precio para la semana de esta producción.</p>
             @else
                 <p class="text-2xl font-semibold text-bosque mt-1">S/ {{ number_format($costo->costoLeche, 2) }}</p>
@@ -31,13 +43,15 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-linea shadow-sm p-5">
-            <p class="text-xs uppercase tracking-wide text-piedra font-medium">Costo total</p>
+            <p class="text-xs uppercase tracking-wide text-piedra font-medium">{{ $costo->costoInsumosIncompleto ? 'Costo conocido (parcial)' : 'Costo total' }}</p>
             @if ($costo->costoTotal === null)
                 <p class="text-sm text-piedra mt-2">No disponible — falta el costo de la leche.</p>
             @else
                 <p class="text-2xl font-semibold text-bosque mt-1">S/ {{ number_format($costo->costoTotal, 2) }}</p>
                 <p class="text-xs text-piedra mt-1">
-                    @if ($costo->costoPorQueso !== null)
+                    @if (count($resultados) === 1 && (float) $resultados[0]['cantidad_producida'] > 0)
+                        S/ {{ number_format($costo->costoTotal / (float) $resultados[0]['cantidad_producida'], 2) }} por {{ $resultados[0]['unidad'] }}{{ $costo->costoInsumosIncompleto ? ' (parcial)' : '' }}
+                    @elseif ($costo->costoPorQueso !== null)
                         S/ {{ number_format($costo->costoPorQueso, 2) }} por queso
                     @else
                         Sin quesos producidos para prorratear

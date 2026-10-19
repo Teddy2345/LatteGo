@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Producto lacteo">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7F7F0"/>
+      <stop offset="1" stop-color="#E7EEE3"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#fondo)"/>
+  <circle cx="200" cy="120" r="78" fill="#DFE5DA" opacity=".6"/>
+  <ellipse cx="200" cy="205" rx="80" ry="11" fill="#173E32" opacity=".10"/>
+  <!-- gota de leche con hojas, como el logo -->
+  <path d="M200 62 Q246 124 234 158 Q224 190 200 190 Q176 190 166 158 Q154 124 200 62 Z" fill="#FFFFFF" stroke="#DFE5DA" stroke-width="3"/>
+  <path d="M184 120 Q176 140 186 162" fill="none" stroke="#EEF1EA" stroke-width="6" stroke-linecap="round"/>
+  <path d="M200 190 Q150 196 132 168 Q168 160 200 190 Z" fill="#356B50"/>
+  <path d="M200 190 Q250 196 268 168 Q232 160 200 190 Z" fill="#4F8A68"/>
+</svg>

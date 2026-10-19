@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Inventario\Providers;
 
+use App\Domain\Inventario\Repositories\CompraRepository;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Infrastructure\Inventario\Models\MovimientoInventarioModel;
 use App\Infrastructure\Inventario\Models\ProductoModel;
+use App\Infrastructure\Inventario\Repositories\EloquentCompraRepository;
 use App\Infrastructure\Inventario\Repositories\EloquentMovimientoInventarioRepository;
 use App\Infrastructure\Inventario\Repositories\EloquentProductoRepository;
 use App\Policies\InventarioPolicy;
@@ -20,6 +22,7 @@ class InventarioServiceProvider extends ServiceProvider
     {
         $this->app->bind(ProductoRepository::class, EloquentProductoRepository::class);
         $this->app->bind(MovimientoInventarioRepository::class, EloquentMovimientoInventarioRepository::class);
+        $this->app->bind(CompraRepository::class, EloquentCompraRepository::class);
     }
 
     public function boot(): void

@@ -1,0 +1,7 @@
+{
+    "The provided two factor authentication code was invalid.": "Ese código no sirve para entrar. Usa el de 6 dígitos que muestra tu celular. Si el tuyo te da uno con letras (por ejemplo ABC-DEF), ese es el de vinculación: ese teléfono todavía no está vinculado a tu cuenta.",
+    "The provided password was incorrect.": "La contraseña no es correcta.",
+    "These credentials do not match our records.": "Esos datos no coinciden con ninguna cuenta.",
+    "Too many login attempts. Please try again in :seconds seconds.": "Demasiados intentos. Vuelve a probar en :seconds segundos.",
+    "The provided password does not match your current password.": "Esa no es tu contraseña actual."
+}

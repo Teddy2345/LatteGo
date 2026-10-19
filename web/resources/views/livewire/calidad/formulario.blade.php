@@ -44,13 +44,14 @@
 
     <form wire:submit="guardar" class="bg-white rounded-2xl border border-linea shadow-sm p-6 space-y-5 max-w-3xl">
         <div>
-            <label class="block text-sm font-medium text-bosque mb-1">Acopio</label>
+            <label class="block text-sm font-medium text-bosque mb-1">Entrega que se analiza</label>
             <select wire:model="acopioId"
                     class="w-full rounded-lg border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
                 <option value="">Seleccione...</option>
                 @foreach ($acopios as $acopio)
                     <option value="{{ $acopio->id }}">
-                        #{{ $acopio->id }} — {{ $acopio->fecha }} — {{ number_format($acopio->cantidadLitros, 2) }} L
+                        {{ $proveedores->get($acopio->proveedorId)?->nombre ?? 'Proveedor no encontrado' }}
+                        — {{ $acopio->fecha }} — {{ number_format($acopio->cantidadLitros, 2) }} L (#{{ $acopio->id }})
                     </option>
                 @endforeach
             </select>

@@ -18,7 +18,7 @@ final class StoreAcopioRequest extends FormRequest
         return [
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,id'],
             'ruta_id' => ['nullable', 'integer', 'exists:rutas,id'],
-            'fecha' => ['required', 'date'],
+            'fecha' => ['required', 'date', 'before_or_equal:today'],
             'cantidad_litros' => ['required', 'numeric', 'min:0.01'],
             'perdida_litros' => ['nullable', 'numeric', 'min:0'],
             'motivo_perdida' => ['nullable', 'string', 'max:255'],

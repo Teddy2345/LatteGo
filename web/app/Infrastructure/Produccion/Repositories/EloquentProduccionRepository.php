@@ -11,6 +11,7 @@ use App\Domain\Produccion\ValueObjects\QuesosProducidos;
 use App\Domain\Produccion\ValueObjects\RendimientoPorcentaje;
 use App\Infrastructure\Produccion\Models\ProduccionModel;
 use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentProduccionRepository implements ProduccionRepository
 {
@@ -53,7 +54,15 @@ final class EloquentProduccionRepository implements ProduccionRepository
 
     private function aDominio(ProduccionModel $modelo): Produccion
     {
-        $litros = new LitrosProcesados((float) $modelo->litros_procesados);
+        $resultados = DB::table('produccion_productos as pp')
+            ->join('productos as p', 'p.id', '=', 'pp.producto_id')
+            ->join('unidades_medida as u', 'u.id', '=', 'pp.unidad_medida_id')
+            ->where('pp.produccion_id', $modelo->id)
+            ->select('pp.producto_id', 'p.nombre as producto', 'u.nombre as unidad', 'pp.cantidad_planificada', 'pp.cantidad_producida')
+            ->get()->map(fn ($r) => (array) $r)->all();
+
+        // Un lote dinamico puede no usar leche de acopio.
+        $litros = new LitrosProcesados((float) $modelo->litros_procesados, permitirCero: count($resultados) > 0);
         $quesos = new QuesosProducidos($modelo->quesos_producidos);
 
         return Produccion::reconstituir(
@@ -65,6 +74,7 @@ final class EloquentProduccionRepository implements ProduccionRepository
             jefaProduccionId: $modelo->jefa_produccion_id,
             observaciones: $modelo->observaciones,
             productoId: $modelo->producto_id,
+            resultados: $resultados,
         );
     }
 }

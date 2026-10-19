@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Inventario\DTOs;
 
+use App\Domain\Inventario\ValueObjects\TipoCliente;
+
 final readonly class RegistrarVentaData
 {
     public function __construct(
@@ -14,6 +16,7 @@ final readonly class RegistrarVentaData
         public ?string $cliente,
         public ?int $usuarioId,
         public ?string $requestId = null,
+        public TipoCliente $tipoCliente = TipoCliente::Externo,
     ) {
     }
 }

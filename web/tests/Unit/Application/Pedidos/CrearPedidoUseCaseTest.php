@@ -29,7 +29,7 @@ function contextoTienda(): array
 
     return [
         new CrearPedidoUseCase($pedidoRepo, $productoRepo, $movimientoRepo),
-        new ConfirmarPedidoUseCase($pedidoRepo),
+        new ConfirmarPedidoUseCase($pedidoRepo, $movimientoRepo),
         new CancelarPedidoUseCase($pedidoRepo),
         $productoRepo,
         $movimientoRepo,
@@ -162,5 +162,10 @@ test('confirmar y cancelar cambian el estado del pedido', function () {
     $confirmado = $confirmar->ejecutar($pedido->id);
     expect($confirmado->estado)->toBe('confirmado');
 
+    // Un confirmado se puede cancelar: si no, la mercaderia que reserva
+    // quedaria bloqueada cuando el pedido no se llega a entregar.
+    expect($cancelar->ejecutar($pedido->id)->estado)->toBe('cancelado');
+
+    // Pero lo ya cancelado no se vuelve a cancelar.
     expect(fn () => $cancelar->ejecutar($pedido->id))->toThrow(PedidoYaRevisadoException::class);
 });

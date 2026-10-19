@@ -50,6 +50,21 @@ class SecureStore(context: Context) {
 
     fun clear() = prefs.edit().remove(TOKEN).remove(USER).apply()
 
+    /**
+     * Identificador de este teléfono, creado la primera vez y conservado
+     * después. No se borra al cerrar sesión: es lo que permite que la
+     * vinculación de la verificación en dos pasos siga valiendo cuando el
+     * dueño vuelve a entrar con su cuenta en el mismo teléfono.
+     */
+    fun dispositivoId(): String {
+        prefs.getString(DISPOSITIVO, null)?.takeIf { it.isNotBlank() }?.let { return it }
+
+        val nuevo = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(DISPOSITIVO, nuevo).apply()
+
+        return nuevo
+    }
+
     private fun cifrar(valor: String): String {
         val cipher = Cipher.getInstance(TRANSFORMACION).apply { init(Cipher.ENCRYPT_MODE, clave()) }
         val datos = cipher.doFinal(valor.toByteArray(Charsets.UTF_8))
@@ -85,6 +100,7 @@ class SecureStore(context: Context) {
         const val TRANSFORMACION = "AES/GCM/NoPadding"
         const val TOKEN = "token"
         const val USER = "usuario"
+        const val DISPOSITIVO = "dispositivo"
     }
 }
 

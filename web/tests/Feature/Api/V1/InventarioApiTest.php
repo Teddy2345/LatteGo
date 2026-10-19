@@ -15,7 +15,7 @@ function autenticarInventario(string $rol = 'admin'): User
     $user = User::factory()->create();
     $user->assignRole($rol);
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }

@@ -1,7 +1,13 @@
 <div class="max-w-5xl mx-auto space-y-6">
-    <div>
-        <h1 class="text-2xl font-semibold text-bosque">Pedidos</h1>
-        <p class="text-sm text-piedra mt-1">Pedidos hechos desde la tienda web.</p>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-bosque">Pedidos</h1>
+            <p class="text-sm text-piedra mt-1">Pedidos hechos desde la tienda web y desde la app del proveedor.</p>
+        </div>
+        <a href="{{ route('pedidos.cobros') }}" wire:navigate
+           class="border border-campo text-campo px-4 py-2 rounded-lg text-sm font-medium hover:bg-salvia">
+            Cobros por Yape
+        </a>
     </div>
 
     <div class="flex flex-wrap gap-2">

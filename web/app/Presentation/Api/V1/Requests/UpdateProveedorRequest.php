@@ -20,7 +20,6 @@ final class UpdateProveedorRequest extends FormRequest
             'telefono' => ['nullable', 'string', 'max:20'],
             'finca' => ['nullable', 'string', 'max:120'],
             'litros_prom' => ['required', 'integer', 'min:0'],
-            'precio_litro' => ['required', 'numeric', 'min:0.01'],
         ];
     }
 }

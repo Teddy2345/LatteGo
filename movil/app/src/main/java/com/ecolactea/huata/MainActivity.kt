@@ -78,6 +78,8 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
     var records by remember { mutableStateOf(emptyList<JSONObject>()) }
     var detail by remember { mutableStateOf<JSONObject?>(null) }
     var proveedorDetalle by remember { mutableStateOf<JSONObject?>(null) }
+    // Sube al comprar y al abrir la campana: fuerza recargar avisos y pedidos.
+    var avisos by remember { mutableIntStateOf(0) }
     var porEnviar by remember { mutableIntStateOf(pendientes.size()) }
     var sincronizando by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -123,7 +125,7 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
             try {
                 for (payload in pendientes.all()) {
                     try {
-                        conexion.request("mobile/acopios", "POST", payload)
+                        enviarAcopio(conexion, payload)
                         pendientes.remove(payload.optString("request_id")); enviados++
                     } catch (e: CancellationException) {
                         throw e
@@ -147,7 +149,7 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                 if (corte == null && (enviados > 0 || descartados > 0)) {
                     notice = buildString {
                         if (enviados > 0) append("$enviados acopio(s) enviados a planta. ")
-                        if (descartados > 0) append("$descartados quedaron descartados por datos inválidos.")
+                        if (descartados > 0) append("$descartados quedaron descartados por datos inválidos. ")
                     }.trim()
                 } else if (avisar && corte == null && enviados == 0) {
                     notice = "No hay acopios pendientes de envío."
@@ -160,7 +162,7 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
     LaunchedEffect(Unit) {
         if (api == null) {
             sesion.load()?.let { (token, guardado) ->
-                runCatching { Api(Api.normalize(server), token) }.getOrNull()?.let {
+                runCatching { Api(Api.normalize(server), token, sesion.dispositivoId()) }.getOrNull()?.let {
                     api = it; user = guardado
                 }
             }
@@ -172,9 +174,14 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
     fun navigate(destination: String) {
         if (busy) return
         if (destination in modules && destination !in allowedModules(user)) return
-        if (destination == "acopio_proveedores" && "acopio" !in actions(user)) return
+        if (destination in listOf("acopio_proveedores", "mi_ruta") && "acopio" !in actions(user)) return
         if (destination == "nueva_produccion" && "planta" !in actions(user)) return
         if (destination == "nueva_venta" && "ventas" !in actions(user)) return
+        if (destination in listOf("tienda_proveedor", "mi_cuenta_proveedor", "mis_pedidos", "mi_zona", "mi_calidad") &&
+            "tienda_proveedor" !in actions(user)
+        ) return
+        if (destination == "reparto" && "reparto" !in actions(user)) return
+        if (destination == "nuevo_analisis" && "calidad" !in actions(user)) return
         screen = destination; detail = null; records = emptyList(); error = null; notice = null
         if (destination == "acopio_proveedores") proveedorDetalle = null
         if (modules.containsKey(destination) && destination != "consolidado") execute { records = api!!.list(modulePath(destination)) }
@@ -188,13 +195,19 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                 Login(server, { server = it }, busy, error) { email, password ->
                     execute {
                         val address = Api.normalize(server)
-                        val result = Api(address).request("login", "POST", JSONObject()
-                            .put("email", email.trim()).put("password", password).put("device_name", "Ecolactea Android"))
+                        val identificador = email.trim()
+                        val cuerpo = JSONObject()
+                            .put("password", password)
+                            .put("device_name", "Ecolactea Android")
+                        // Con arroba es correo del personal; sin el, cedula de proveedor.
+                        if (identificador.contains("@")) cuerpo.put("email", identificador)
+                        else cuerpo.put("cedula", identificador)
+                        val result = Api(address, "", sesion.dispositivoId()).request("login", "POST", cuerpo)
                             .getJSONObject("data")
                         user = result.getJSONObject("user")
                         val token = result.getString("token")
                         sesion.save(token, user)
-                        api = Api(address, token)
+                        api = Api(address, token, sesion.dispositivoId())
                         saveServer(server.trim()); screen = "inicio"
                     }
                 }
@@ -209,11 +222,17 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                         Text("Ecolactea", color = DarkGreen, fontWeight = FontWeight.Bold, fontSize = 19.sp)
                         Text(user.optString("perfil", "HUATA"), color = Gray, fontSize = 10.sp)
                     }
-                    // La campana solo le sirve a quien tiene 2FA obligatorio.
+                    // La campana lleva al 2FA de quien lo tiene obligatorio en la
+                    // web, y a sus avisos —el codigo del pedido— si es proveedor.
                     if (requiereDosFactores(user)) {
                         IconButton(modifier = Modifier.semantics { contentDescription = "Codigo de verificacion" },
                             enabled = !busy, onClick = { navigate("dos_factores") }) {
                             Glyph("campana", if (screen == "dos_factores") Green else Gray)
+                        }
+                    } else if ("tienda_proveedor" in actions(user)) {
+                        IconButton(modifier = Modifier.semantics { contentDescription = "Mis avisos" },
+                            enabled = !busy, onClick = { avisos++; navigate("avisos") }) {
+                            Glyph("campana", if (screen == "avisos") Green else Gray)
                         }
                     }
                     Surface(color = PaleGreen, shape = RoundedCornerShape(16.dp)) {
@@ -236,13 +255,45 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                             Text(server)
                             Button(enabled = !busy, onClick = {
                                 execute {
-                                    api!!.request("logout", "POST")
+                                    // Salir es local: si el servidor no responde —o la
+                                    // direccion esta mal— igual se cierra la sesion, o no
+                                    // habria forma de corregir el servidor desde aqui.
+                                    try {
+                                        api!!.request("logout", "POST")
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
+                                        // Da igual por que fallo: la sesion local se cierra.
+                                    }
                                     sesion.clear(); api = null; user = JSONObject(); screen = "inicio"
                                 }
                             }) { Text("Cerrar sesión") }
                             Text("Para cambiar de servidor, cierra la sesión. La sesión se guarda solo mientras la app está abierta.", color = Gray)
                         }
                         screen == "dos_factores" -> DosFactoresScreen(api!!)
+                        screen == "avisos" -> NotificacionesScreen(api!!, avisos)
+                        screen == "tienda_proveedor" -> TiendaProveedorScreen(api!!) { codigo ->
+                            notice = "Pedido " + codigo + " registrado. Lo ves en Mis pedidos."
+                            avisos++
+                            navigate("mis_pedidos")
+                        }
+                        screen == "reparto" -> RepartoScreen(api!!) { comprobante ->
+                            notice = if (comprobante.isBlank()) "Entrega registrada."
+                                else "Entrega registrada. Boleta " + comprobante + "."
+                        }
+                        screen == "nuevo_analisis" -> CalidadMovilScreen(api!!) { resultado ->
+                            notice = if (resultado == "rechazada") "Análisis guardado: la leche quedó rechazada."
+                                else "Análisis guardado: la leche quedó aceptada."
+                            navigate("calidad")
+                        }
+                        screen == "mi_calidad" -> MiCalidadProveedorScreen(api!!)
+                        screen == "mi_cuenta_proveedor" -> MiCuentaProveedorScreen(api!!)
+                        screen == "mis_pedidos" -> MisPedidosProveedorScreen(api!!, avisos)
+                        screen == "mi_zona" -> MiZonaProveedorScreen(api!!) {
+                            notice = "Tu solicitud de cambio de zona quedó registrada. La planta la revisará."
+                            navigate("inicio")
+                        }
+                        screen == "mi_ruta" -> MiRutaScreen(api!!)
                         screen == "consolidado" -> ConsolidatedScreen(api!!)
                         screen == "acopio_proveedores" -> ProveedorPicker(api!!, busy) { proveedor ->
                             execute {
@@ -251,8 +302,8 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                             }
                         }
                         screen == "acopio_proveedor" && proveedorDetalle != null -> ProveedorDetalle(proveedorDetalle!!, busy,
-                            onNuevoLitraje = { screen = "nuevo" }, onTraslado = { screen = "traslado_zona" })
-                        screen == "nuevo" && proveedorDetalle != null -> CampoForm(proveedorDetalle!!, busy) { payload ->
+                            onNuevoLitraje = { notice = null; error = null; screen = "nuevo" })
+                        screen == "nuevo" && proveedorDetalle != null -> CampoForm(api!!, proveedorDetalle!!, busy) { payload ->
                             // Sin señal el acopio se guarda en el teléfono y se
                             // envía solo cuando vuelve la cobertura.
                             if (!hayConexion(context)) {
@@ -261,7 +312,7 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                                 notice = "Sin señal: el acopio quedó guardado y se enviará al recuperar cobertura."
                             } else execute {
                                 try {
-                                    api!!.request("mobile/acopios", "POST", payload)
+                                    enviarAcopio(api!!, payload)
                                     proveedorDetalle = api!!.request("mobile/proveedores/${proveedorDetalle!!.getInt("id")}").getJSONObject("data")
                                     screen = "acopio_proveedor"
                                     notice = "Litraje enviado. El reporte de planta ya está actualizado."
@@ -276,19 +327,13 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
                                 }
                             }
                         }
-                        screen == "traslado_zona" && proveedorDetalle != null -> TrasladoZonaForm(api!!, proveedorDetalle!!, busy) { payload ->
-                            execute {
-                                api!!.request("mobile/proveedores/${proveedorDetalle!!.getInt("id")}/cambio-zona", "POST", payload)
-                                screen = "acopio_proveedor"
-                                notice = "Solicitud de traslado enviada. Quedará pendiente de aprobación."
-                            }
-                        }
                         screen == "nueva_produccion" || screen == "nueva_venta" -> PlantaForm(api!!, screen == "nueva_venta", busy) { payload ->
                             val target=if(screen=="nueva_venta") "ventas" else "produccion"
                             execute { api!!.request("mobile/$target","POST",payload); screen="inicio"; notice="Registro guardado. Stock actualizado." }
                         }
                         else -> Column {
                             if(screen=="produccion" && "planta" in actions(user)) TextButton(enabled=!busy,onClick={navigate("nueva_produccion")}){Text("+ Registrar transformación")}
+                            if(screen=="calidad" && "calidad" in actions(user)) TextButton(enabled=!busy,onClick={navigate("nuevo_analisis")}){Text("+ Nuevo análisis")}
                             if(screen=="ventas" && "ventas" in actions(user)) TextButton(enabled=!busy,onClick={navigate("nueva_venta")}){Text("+ Registrar venta")}
                             if(screen=="stock") Text("Stock de los lotes registrados desde la activación del módulo móvil.",Modifier.padding(16.dp),fontSize=12.sp,color=Gray)
                             Box(Modifier.weight(1f)) { Records(allowedModules(user)[screen].orEmpty(), screen, records, busy,
@@ -313,7 +358,8 @@ private fun EcolacteaApp(initialServer: String, saveServer: (String) -> Unit) {
 
 @Composable
 private fun Login(server: String, onServer: (String) -> Unit, busy: Boolean, error: String?, onLogin: (String, String) -> Unit) {
-    var email by rememberSaveable { mutableStateOf("") }
+    // El personal entra con su correo; el proveedor, con su cedula.
+    var usuario by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var settings by rememberSaveable { mutableStateOf(false) }
     Box(Modifier.fillMaxSize()) {
@@ -340,7 +386,8 @@ private fun Login(server: String, onServer: (String) -> Unit, busy: Boolean, err
                         Text("Bienvenido de nuevo", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = DarkGreen)
                         Text("Ingresa a tu cuenta para continuar.", color = Gray, fontSize = 13.sp)
                     }
-                    OutlinedTextField(email, { email = it }, label = { Text("Correo electrónico") }, singleLine = true,
+                    OutlinedTextField(usuario, { usuario = it }, label = { Text("Correo o cédula") }, singleLine = true,
+                        supportingText = { Text("Si eres proveedor, entra con tu cédula.", color = Gray, fontSize = 11.sp) },
                         leadingIcon = { Glyph("mail", Gray, Modifier.size(20.dp)) }, shape = RoundedCornerShape(14.dp),
                         enabled = !busy, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                     OutlinedTextField(password, { password = it }, label = { Text("Contraseña") }, singleLine = true,
@@ -348,7 +395,7 @@ private fun Login(server: String, onServer: (String) -> Unit, busy: Boolean, err
                         enabled = !busy, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
                     error?.let { Message(it, true) }
-                    Button(onClick = { onLogin(email, password) }, enabled = !busy && email.isNotBlank() && password.isNotEmpty(),
+                    Button(onClick = { onLogin(usuario, password) }, enabled = !busy && usuario.isNotBlank() && password.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) {
                         if (busy) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White); Spacer(Modifier.width(10.dp)) }
                         Text(if (busy) "Conectando…" else "Ingresar", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
@@ -397,6 +444,105 @@ private fun Home(user: JSONObject, busy: Boolean, navigate: (String) -> Unit) {
                 }
             }
         }
+        // El proveedor entra a lo suyo: comprar, su leche y sus pedidos.
+        if ("tienda_proveedor" in actions(user)) item {
+            Card(onClick = { navigate("tienda_proveedor") }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Green)) {
+                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = .13f)), contentAlignment = Alignment.Center) {
+                        Glyph("pagos", Color.White)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Tienda", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Compra con tu precio de proveedor", color = Color.White.copy(alpha = .82f), fontSize = 11.sp)
+                    }
+                    Glyph("arrow", Color.White, Modifier.size(18.dp))
+                }
+            }
+        }
+        if ("tienda_proveedor" in actions(user)) item {
+            // Cuatro accesos en dos filas: con tres por fila el texto se corta.
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(
+                    listOf(
+                        Triple("mi_cuenta_proveedor", "Mi leche", "acopios"),
+                        Triple("mi_calidad", "Mi calidad", "calidad"),
+                    ),
+                    listOf(
+                        Triple("mis_pedidos", "Mis pedidos", "despachos"),
+                        Triple("mi_zona", "Mi zona", "proveedores"),
+                    ),
+                ).forEach { fila ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        fila.forEach { destino ->
+                            Card(onClick = { navigate(destino.first) }, enabled = !busy, modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, Line),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(PaleGreen), contentAlignment = Alignment.Center) {
+                                        Glyph(destino.third, Green)
+                                    }
+                                    Text(destino.second, color = DarkGreen, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Quien reparte entra directo a su ruta: es lo unico que hace en la app.
+        if ("reparto" in actions(user)) item {
+            Card(onClick = { navigate("reparto") }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Green)) {
+                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = .13f)), contentAlignment = Alignment.Center) {
+                        Glyph("despachos", Color.White)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Reparto de hoy", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Pedidos, direcciones y cobro", color = Color.White.copy(alpha = .82f), fontSize = 11.sp)
+                    }
+                    Glyph("arrow", Color.White, Modifier.size(18.dp))
+                }
+            }
+        }
+        // Calidad arranca por la foto del LactoScan, no por la lista.
+        if ("calidad" in actions(user)) item {
+            Card(onClick = { navigate("nuevo_analisis") }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, Line),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(PaleGreen), contentAlignment = Alignment.Center) {
+                        Glyph("calidad", Green)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Nuevo análisis", color = DarkGreen, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Escanea la pantalla del LactoScan", color = Gray, fontSize = 11.sp)
+                    }
+                    Glyph("arrow", Gray, Modifier.size(18.dp))
+                }
+            }
+        }
+        if ("acopio" in actions(user)) item {
+            Card(onClick = { navigate("mi_ruta") }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, Line),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(PaleGreen), contentAlignment = Alignment.Center) {
+                        Glyph("consolidado", Green)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Mi ruta", color = DarkGreen, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Mapa y proveedores que atiendes", color = Gray, fontSize = 11.sp)
+                    }
+                    Glyph("arrow", Green, Modifier.size(18.dp))
+                }
+            }
+        }
         if ("acopio" in actions(user)) item {
             Card(onClick = { navigate("acopio_proveedores") }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Green)) {
@@ -413,7 +559,7 @@ private fun Home(user: JSONObject, busy: Boolean, navigate: (String) -> Unit) {
                 }
             }
         }
-        item {
+        if (visible.isNotEmpty()) item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Gestión de la planta", fontSize = 18.sp, color = DarkGreen, fontWeight = FontWeight.Bold)
                 Text("${visible.size} módulos", color = Gray, fontSize = 11.sp)

@@ -25,6 +25,8 @@ final class EloquentProductoRepository implements ProductoRepository
             'descripcion' => $producto->descripcion,
             'unidad' => $producto->unidad,
             'precio_referencia' => $producto->precioReferencia,
+            'precio_vecino' => $producto->precioVecino,
+            'precio_proveedor' => $producto->precioProveedor,
             'stock_minimo' => $producto->stockMinimo,
             'activo' => $producto->activo,
         ]);
@@ -73,6 +75,8 @@ final class EloquentProductoRepository implements ProductoRepository
             activo: (bool) $modelo->activo,
             descripcion: $modelo->descripcion,
             fotoPath: $modelo->foto_path,
+            precioVecino: $modelo->precio_vecino === null ? null : (float) $modelo->precio_vecino,
+            precioProveedor: $modelo->precio_proveedor === null ? null : (float) $modelo->precio_proveedor,
         );
     }
 }

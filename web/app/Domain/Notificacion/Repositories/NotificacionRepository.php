@@ -13,7 +13,11 @@ interface NotificacionRepository
     /**
      * @return Notificacion[]
      */
-    public function listarRecientes(int $limite): array;
+    /**
+     * @param  ?int  $usuarioId  Para quien se lista; ve las suyas y, si no es
+     *                           $soloPropias, tambien las de toda la planta.
+     */
+    public function listarRecientes(int $limite, ?int $usuarioId = null, bool $soloPropias = false): array;
 
     /**
      * Ids de notificaciones (de las mas recientes) ya leidas por ese usuario.
@@ -25,5 +29,5 @@ interface NotificacionRepository
 
     public function marcarLeida(int $notificacionId, int $userId): void;
 
-    public function contarNoLeidasPara(int $userId): int;
+    public function contarNoLeidasPara(int $userId, bool $soloPropias = false): int;
 }

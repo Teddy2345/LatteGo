@@ -15,6 +15,22 @@
 
     <form wire:submit="guardar" class="bg-white rounded-2xl border border-linea shadow-sm p-6 space-y-5 max-w-xl">
         <div>
+            <label class="block text-sm font-medium text-bosque mb-1">¿A quién se le vende?</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                @foreach ($tiposCliente as $tipo)
+                    <label class="flex items-start gap-2 rounded-xl border p-3 cursor-pointer transition-colors
+                                  {{ $tipoCliente === $tipo->value ? 'border-campo bg-salvia' : 'border-linea hover:bg-crema' }}">
+                        <input type="radio" wire:model.live="tipoCliente" value="{{ $tipo->value }}"
+                               class="mt-0.5 text-campo focus:ring-campo">
+                        <span class="text-sm text-bosque leading-tight">{{ $tipo->etiqueta() }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <p class="text-xs text-piedra mt-1">Decide el precio que se propone abajo. Queda guardado en la venta.</p>
+            @error('tipoCliente') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
             <label class="block text-sm font-medium text-bosque mb-1">Producto</label>
             <select wire:model.live="productoId" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
                 <option value="">Seleccione...</option>
@@ -47,12 +63,44 @@
                 @error('precioUnitario') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
-        <p class="text-xs text-piedra">Al elegir el producto se propone su precio de referencia; puedes ajustarlo.</p>
+        <p class="text-xs text-piedra">Se propone el precio que le toca a ese comprador; puedes ajustarlo si hay un trato distinto.</p>
 
         <div>
             <label class="block text-sm font-medium text-bosque mb-1">Cliente (opcional)</label>
             <input type="text" wire:model="cliente" class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
             @error('cliente') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="border border-linea rounded-xl p-4 space-y-3">
+            <div>
+                <p class="text-sm font-medium text-bosque">Comprobante para el cliente</p>
+                <p class="text-xs text-piedra mt-0.5">Se numera al confirmar la venta y queda en PDF para imprimir o guardar.</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                @foreach (['boleta' => 'Boleta', 'factura' => 'Factura', 'ninguno' => 'Sin comprobante'] as $valor => $etiqueta)
+                    <label class="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm cursor-pointer
+                                  {{ $tipoComprobante === $valor ? 'border-campo bg-salvia' : 'border-linea hover:bg-crema' }}">
+                        <input type="radio" wire:model.live="tipoComprobante" value="{{ $valor }}" class="text-campo focus:ring-campo">
+                        {{ $etiqueta }}
+                    </label>
+                @endforeach
+            </div>
+            @error('tipoComprobante') <p class="text-red-600 text-xs">{{ $message }}</p> @enderror
+
+            @if ($tipoComprobante !== 'ninguno')
+                <div>
+                    <label class="block text-sm font-medium text-bosque mb-1">
+                        {{ $tipoComprobante === 'factura' ? 'RUC del cliente' : 'DNI del cliente (opcional)' }}
+                    </label>
+                    <input type="text" wire:model="clienteDocumento" maxlength="20"
+                           class="w-full rounded-xl border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
+                    @error('clienteDocumento') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                    @if ($tipoComprobante === 'factura')
+                        <p class="text-xs text-piedra mt-1">La factura va a nombre de una empresa: sin RUC no se puede emitir.</p>
+                    @endif
+                </div>
+            @endif
         </div>
 
         <div class="flex justify-end gap-3 pt-2 border-t border-linea">

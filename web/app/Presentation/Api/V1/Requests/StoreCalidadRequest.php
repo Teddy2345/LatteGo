@@ -18,7 +18,7 @@ final class StoreCalidadRequest extends FormRequest
         return [
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,id'],
             'acopio_id' => ['required', 'integer', 'exists:acopios,id'],
-            'fecha' => ['required', 'date'],
+            'fecha' => ['required', 'date', 'before_or_equal:today'],
             'temperatura' => ['required', 'numeric'],
             'grasa' => ['required', 'numeric'],
             'solidos_no_grasos' => ['required', 'numeric'],

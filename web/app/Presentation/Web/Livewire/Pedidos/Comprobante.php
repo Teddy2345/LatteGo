@@ -9,11 +9,13 @@ use App\Infrastructure\Pedidos\Models\PedidoModel;
 use App\Models\User;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.print')]
 final class Comprobante extends Component
 {
+    #[Locked]
     public int $pedidoId;
 
     public function mount(int $pedido): void

@@ -25,6 +25,10 @@ final readonly class PedidoData
         public ?string $metodoPago = null,
         public ?float $montoCobrado = null,
         public ?string $fechaEntrega = null,
+        public ?string $codigo = null,
+        public ?string $tipoEntrega = null,
+        public ?string $tipoCliente = null,
+        public ?string $referenciaPago = null,
     ) {
     }
 
@@ -47,6 +51,10 @@ final readonly class PedidoData
             metodoPago: $pedido->metodoPago?->value,
             montoCobrado: $pedido->montoCobrado,
             fechaEntrega: $pedido->fechaEntrega?->format('Y-m-d'),
+            codigo: $pedido->codigo,
+            tipoEntrega: $pedido->tipoEntrega?->value,
+            tipoCliente: $pedido->tipoCliente->value,
+            referenciaPago: $pedido->referenciaPago,
         );
     }
 }

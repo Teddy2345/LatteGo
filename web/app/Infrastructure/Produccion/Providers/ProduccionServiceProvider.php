@@ -6,10 +6,12 @@ namespace App\Infrastructure\Produccion\Providers;
 
 use App\Domain\Produccion\Repositories\DespachoRepository;
 use App\Domain\Produccion\Repositories\ProduccionRepository;
+use App\Domain\Produccion\Repositories\RecetaRepository;
 use App\Infrastructure\Produccion\Models\DespachoModel;
 use App\Infrastructure\Produccion\Models\ProduccionModel;
 use App\Infrastructure\Produccion\Repositories\EloquentDespachoRepository;
 use App\Infrastructure\Produccion\Repositories\EloquentProduccionRepository;
+use App\Infrastructure\Produccion\Repositories\EloquentRecetaRepository;
 use App\Policies\ProduccionPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +21,7 @@ class ProduccionServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(ProduccionRepository::class, EloquentProduccionRepository::class);
+        $this->app->bind(RecetaRepository::class, EloquentRecetaRepository::class);
         $this->app->bind(DespachoRepository::class, EloquentDespachoRepository::class);
     }
 

@@ -109,9 +109,9 @@ final class Calidad
     }
 
     /**
-     * La sancion solo aplica a rechazos por adulteracion. La primera vez
-     * que un proveedor adultera se le descuenta la semana; de la segunda
-     * vez en adelante se le retira temporalmente de la planta.
+     * La sancion solo aplica cuando el ganadero añadio agua. La primera vez
+     * no se le paga esa entrega; si reincide, en cualquier momento, queda
+     * suspendido toda esa semana sin pago.
      */
     public function determinarSancion(int $adulteracionesPreviasDelProveedor): SancionAplicada
     {
@@ -120,8 +120,8 @@ final class Calidad
         }
 
         return $adulteracionesPreviasDelProveedor === 0
-            ? SancionAplicada::DescuentoSemana
-            : SancionAplicada::RetiroTemporal;
+            ? SancionAplicada::SinPagoEntrega
+            : SancionAplicada::SuspensionSemana;
     }
 
     public function conSancion(SancionAplicada $sancion): self

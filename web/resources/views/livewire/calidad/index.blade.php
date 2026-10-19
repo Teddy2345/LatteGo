@@ -45,11 +45,12 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center">
-                                @if ($item->sancionAplicada === 'ninguna')
+                                @php $sancion = App\Domain\Calidad\ValueObjects\SancionAplicada::from($item->sancionAplicada); @endphp
+                                @if ($sancion === App\Domain\Calidad\ValueObjects\SancionAplicada::Ninguna)
                                     <span class="text-gray-300">—</span>
                                 @else
-                                    <span class="inline-block bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                                        {{ str_replace('_', ' ', $item->sancionAplicada) }}
+                                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $sancion === App\Domain\Calidad\ValueObjects\SancionAplicada::SuspensionSemana ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">
+                                        {{ $sancion->etiqueta() }}
                                     </span>
                                 @endif
                             </td>

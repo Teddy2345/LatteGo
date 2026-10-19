@@ -11,6 +11,7 @@ final readonly class EntregarPedidoData
         public string $metodoPago,
         public float $montoCobrado,
         public string $fechaEntrega,
+        public ?string $referenciaPago = null,
     ) {
     }
 }

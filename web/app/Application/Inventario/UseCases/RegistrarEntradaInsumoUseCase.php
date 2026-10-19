@@ -11,6 +11,7 @@ use App\Domain\Inventario\Exceptions\ProductoNoEncontradoException;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoProducto;
 use DateTimeImmutable;
 
 /**
@@ -39,6 +40,8 @@ final class RegistrarEntradaInsumoUseCase
         if ($producto === null) {
             throw new ProductoNoEncontradoException("No existe un producto con id {$datos->productoId}.");
         }
+
+        $producto->exigirTipo(TipoProducto::Insumo, 'una entrada de insumos');
 
         $movimiento = MovimientoInventario::compra(
             productoId: $datos->productoId,

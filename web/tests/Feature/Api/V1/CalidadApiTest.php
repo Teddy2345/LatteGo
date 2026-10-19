@@ -16,7 +16,7 @@ function autenticarUsuarioCalidad(): User
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }
@@ -98,12 +98,12 @@ test('rechaza automaticamente por adulteracion cuando hay agua añadida', functi
     $respuesta->assertCreated()
         ->assertJsonPath('data.resultado', 'rechazada')
         ->assertJsonPath('data.motivo_rechazo', 'adulteracion')
-        ->assertJsonPath('data.sancion_aplicada', 'descuento_semana');
+        ->assertJsonPath('data.sancion_aplicada', 'sin_pago_entrega');
 
     $this->assertDatabaseHas('proveedores', ['id' => $proveedor->id, 'activo' => true]);
 });
 
-test('la segunda adulteracion retira temporalmente al proveedor', function () {
+test('la segunda adulteracion suspende la semana sin dar de baja al proveedor', function () {
     autenticarUsuarioCalidad();
     $proveedor = ProveedorModel::factory()->create(['activo' => true]);
 
@@ -129,9 +129,10 @@ test('la segunda adulteracion retira temporalmente al proveedor', function () {
     $acopio2 = AcopioModel::factory()->create(['proveedor_id' => $proveedor->id]);
     $respuesta = $this->postJson('/api/v1/calidad', $payload($acopio2->id));
 
-    $respuesta->assertCreated()->assertJsonPath('data.sancion_aplicada', 'retiro_temporal');
+    $respuesta->assertCreated()->assertJsonPath('data.sancion_aplicada', 'suspension_semana');
 
-    $this->assertDatabaseHas('proveedores', ['id' => $proveedor->id, 'activo' => false]);
+    // La suspension vence sola: no se lo da de baja.
+    $this->assertDatabaseHas('proveedores', ['id' => $proveedor->id, 'activo' => true]);
 });
 
 test('muestra un analisis de calidad', function () {
@@ -147,4 +148,29 @@ test('devuelve 404 al mostrar un analisis inexistente', function () {
     autenticarUsuarioCalidad();
 
     $this->getJson('/api/v1/calidad/999999')->assertNotFound();
+});
+
+test('la api rechaza un analisis cuyo acopio es de otro proveedor', function () {
+    autenticarUsuarioCalidad();
+    $inocente = ProveedorModel::factory()->create(['activo' => true]);
+    $otro = ProveedorModel::factory()->create(['activo' => true]);
+    $acopioDelInocente = AcopioModel::factory()->create(['proveedor_id' => $inocente->id]);
+
+    $this->postJson('/api/v1/calidad', [
+        'proveedor_id' => $otro->id,
+        'acopio_id' => $acopioDelInocente->id,
+        'fecha' => '2024-01-04',
+        'temperatura' => 4.0,
+        'grasa' => 3.5,
+        'solidos_no_grasos' => 8.5,
+        'densidad' => 22.0,
+        'proteina' => 3.2,
+        'lactosa' => 4.6,
+        'sales' => 0.7,
+        'agua_agregada' => 5.0,
+        'ph' => 6.7,
+        'prueba_alcohol_aceptada' => true,
+    ])->assertUnprocessable();
+
+    expect(CalidadModel::query()->where('acopio_id', $acopioDelInocente->id)->exists())->toBeFalse();
 });

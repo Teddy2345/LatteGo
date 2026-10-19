@@ -23,6 +23,8 @@ final class MovimientoInventarioModel extends Model
     protected $fillable = [
         'producto_id',
         'produccion_id',
+        'compra_id',
+        'pedido_id',
         'tipo',
         'fecha',
         'cantidad',
@@ -31,6 +33,7 @@ final class MovimientoInventarioModel extends Model
         'precio_unitario',
         'total',
         'cliente',
+        'tipo_cliente',
         'observaciones',
         'usuario_id',
         'request_id',

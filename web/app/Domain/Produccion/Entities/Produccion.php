@@ -20,6 +20,7 @@ final class Produccion
         public readonly ?int $jefaProduccionId,
         public readonly ?string $observaciones,
         public readonly ?int $productoId,
+        public readonly array $resultados = [],
     ) {
     }
 
@@ -56,7 +57,8 @@ final class Produccion
         ?int $jefaProduccionId,
         ?string $observaciones,
         ?int $productoId = null,
+        array $resultados = [],
     ): self {
-        return new self($id, $fecha, $litrosProcesados, $quesosProducidos, $rendimiento, $jefaProduccionId, $observaciones, $productoId);
+        return new self($id, $fecha, $litrosProcesados, $quesosProducidos, $rendimiento, $jefaProduccionId, $observaciones, $productoId, $resultados);
     }
 }

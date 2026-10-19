@@ -10,6 +10,7 @@ use App\Application\Pedidos\DTOs\ItemCarritoData;
 use App\Application\Pedidos\UseCases\CrearPedidoUseCase;
 use App\Domain\Shared\Exceptions\DomainRuleException;
 use App\Presentation\Web\Livewire\Tienda\Concerns\InteractuaConCarrito;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -34,10 +35,25 @@ final class Checkout extends Component
 
     public string $error = '';
 
+    /** Pedidos que un mismo visitante puede enviar seguidos antes de esperar. */
+    private const PEDIDOS_POR_VENTANA = 5;
+
+    private const VENTANA_SEGUNDOS = 600;
+
     public function confirmar(CrearPedidoUseCase $crear, ListarProductosConStockUseCase $listar): void
     {
         $this->validate();
         $this->error = '';
+
+        // La tienda es publica y no pide cuenta: sin un tope, cualquiera
+        // podria llenar de pedidos falsos la bandeja de ventas.
+        $limite = 'tienda-pedidos:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($limite, self::PEDIDOS_POR_VENTANA)) {
+            $this->error = 'Ya enviaste varios pedidos seguidos. Espera unos minutos antes de enviar otro.';
+
+            return;
+        }
 
         $carrito = $this->resolverCarrito($listar);
 
@@ -68,6 +84,7 @@ final class Checkout extends Component
             return;
         }
 
+        RateLimiter::hit($limite, self::VENTANA_SEGUNDOS);
         session()->forget('carrito');
         // Deja constancia de que este visitante es quien hizo el pedido: la
         // pantalla de gracias muestra nombre y telefono del cliente y es

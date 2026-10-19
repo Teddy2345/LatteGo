@@ -11,6 +11,7 @@ use App\Application\Proveedor\UseCases\CambiarEstadoProveedorUseCase;
 use App\Application\Proveedor\UseCases\EliminarProveedorUseCase;
 use App\Application\Proveedor\UseCases\ListarProveedoresActivosUseCase;
 use App\Application\Proveedor\UseCases\ListarProveedoresUseCase;
+use App\Application\Proveedor\UseCases\ObtenerPrecioLitroVigenteUseCase;
 use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Application\Proveedor\UseCases\ReasignarRutaProveedorUseCase;
 use App\Application\Proveedor\UseCases\RegistrarProveedorUseCase;
@@ -36,7 +37,11 @@ final class ProveedorController extends Controller
         return ProveedorResource::collection($proveedores);
     }
 
-    public function store(StoreProveedorRequest $request, RegistrarProveedorUseCase $registrar): \Illuminate\Http\JsonResponse
+    /**
+     * El precio por litro es general para toda la planta: un proveedor nuevo
+     * recibe el vigente y la API no deja fijarle uno propio.
+     */
+    public function store(StoreProveedorRequest $request, RegistrarProveedorUseCase $registrar, ObtenerPrecioLitroVigenteUseCase $precioVigente): \Illuminate\Http\JsonResponse
     {
         $this->authorize('create', ProveedorModel::class);
 
@@ -46,7 +51,7 @@ final class ProveedorController extends Controller
             telefono: $request->input('telefono'),
             finca: $request->input('finca'),
             litrosProm: $request->integer('litros_prom'),
-            precioLitro: (float) $request->input('precio_litro'),
+            precioLitro: $precioVigente->ejecutar(),
             rutaId: $request->input('ruta_id'),
         ));
 
@@ -60,7 +65,8 @@ final class ProveedorController extends Controller
         return new ProveedorResource($obtener->ejecutar($proveedor));
     }
 
-    public function update(UpdateProveedorRequest $request, int $proveedor, ActualizarProveedorUseCase $actualizar): ProveedorResource
+    /** Editar un proveedor no cambia su precio: conserva el general vigente. */
+    public function update(UpdateProveedorRequest $request, int $proveedor, ActualizarProveedorUseCase $actualizar, ObtenerProveedorUseCase $obtener): ProveedorResource
     {
         $this->authorize('update', ProveedorModel::class);
 
@@ -70,7 +76,7 @@ final class ProveedorController extends Controller
             telefono: $request->input('telefono'),
             finca: $request->input('finca'),
             litrosProm: $request->integer('litros_prom'),
-            precioLitro: (float) $request->input('precio_litro'),
+            precioLitro: $obtener->ejecutar($proveedor)->precioLitro,
         ));
 
         return new ProveedorResource($actualizado);

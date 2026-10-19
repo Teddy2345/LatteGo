@@ -21,6 +21,7 @@ use App\Application\Proveedor\UseCases\ListarProveedoresActivosUseCase;
 use App\Application\Proveedor\UseCases\ListarProveedoresUseCase;
 use App\Domain\Acopio\ValueObjects\SemanaPago;
 use App\Domain\Inventario\ValueObjects\TipoMovimiento;
+use App\Presentation\Support\AlcanceAcopios;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -77,14 +78,16 @@ final class Index extends Component
 
         if ($puedeAcopios) {
             $semana = SemanaPago::desde(new DateTimeImmutable());
-            $acopios = collect($listarAcopios->ejecutar());
+            // El acopiador ve sus propias cifras, no las de toda la planta.
+            $delAlcance = static fn (AcopioData $a): bool => AlcanceAcopios::puedeVer($user, $a->acopiadorId);
+            $acopios = collect($listarAcopios->ejecutar())->filter($delAlcance)->values();
 
             $datos['semanaInicio'] = $semana->inicio->format('Y-m-d');
             $datos['semanaFin'] = $semana->fin->format('Y-m-d');
             $datos['litrosSemana'] = $acopios
                 ->filter(fn (AcopioData $a) => $a->fecha >= $semana->inicio->format('Y-m-d') && $a->fecha <= $semana->fin->format('Y-m-d'))
                 ->sum('cantidadLitros');
-            $datos['acopiosPendientes'] = count($listarAcopiosPendientes->ejecutar());
+            $datos['acopiosPendientes'] = collect($listarAcopiosPendientes->ejecutar())->filter($delAlcance)->count();
             $datos['ultimosAcopios'] = $acopios->take(5);
 
             $datos['tendenciaLitros'] = $this->agruparPorSemana(
@@ -153,7 +156,9 @@ final class Index extends Component
         }
 
         if ($puedePedidos) {
-            $pedidos = collect($listarPedidos->ejecutar());
+            // Quien solo reparte ve sus entregas, igual que en la bandeja de pedidos.
+            $soloRepartidor = ! $user->can('ventas.registrar') && ! $user->can('reportes.ver');
+            $pedidos = collect($listarPedidos->ejecutar(null, $soloRepartidor ? $user->id : null));
 
             $datos['pedidosPendientes'] = $pedidos->where('estado', 'pendiente')->count();
             $datos['pedidosPorEstado'] = [

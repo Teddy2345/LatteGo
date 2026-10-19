@@ -15,18 +15,16 @@
         <div class="bg-white rounded-2xl border border-linea shadow-sm divide-y divide-linea">
             @foreach ($lineas as $linea)
                 <div class="p-5 flex items-center gap-4" wire:key="carrito-{{ $linea['producto']->id }}">
-                    <div class="h-14 w-14 rounded-lg bg-salvia shrink-0 overflow-hidden flex items-center justify-center">
-                        @if ($linea['producto']->fotoPath)
-                            <img src="{{ Illuminate\Support\Facades\Storage::url($linea['producto']->fotoPath) }}" class="h-full w-full object-cover">
-                        @else
-                            <svg class="h-6 w-6 text-campo" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5 12 3.75 3.75 7.5m16.5 0L12 11.25M20.25 7.5v9L12 20.25m0-9L3.75 7.5m8.25 3.75v9M3.75 7.5v9L12 20.25" /></svg>
-                        @endif
+                    <div class="h-14 w-14 rounded-lg bg-salvia shrink-0 overflow-hidden">
+                        <x-tienda.imagen-producto :producto="$linea['producto']" />
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="font-medium text-bosque">{{ $linea['producto']->nombre }}</p>
                         <p class="text-xs text-piedra">S/ {{ number_format($linea['producto']->precioReferencia, 2) }} / {{ $linea['producto']->unidad }}</p>
                     </div>
-                    <input type="number" min="0.01" step="0.01" value="{{ $linea['cantidad'] }}"
+                    @php $entera = $linea['producto']->seVendePorUnidadEntera(); @endphp
+                    <input type="number" min="{{ $entera ? 1 : 0.01 }}" step="{{ $entera ? 1 : 0.01 }}"
+                           value="{{ $entera ? (int) $linea['cantidad'] : $linea['cantidad'] }}"
                            wire:change="actualizar({{ $linea['producto']->id }}, $event.target.value)"
                            class="w-20 rounded-lg border-linea shadow-sm text-sm text-center focus:border-campo focus:ring-campo">
                     <p class="w-24 text-right font-semibold text-bosque">S/ {{ number_format($linea['subtotal'], 2) }}</p>

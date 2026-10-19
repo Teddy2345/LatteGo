@@ -13,8 +13,8 @@ final class ContarNotificacionesNoLeidasUseCase
     ) {
     }
 
-    public function ejecutar(int $userId): int
+    public function ejecutar(int $userId, bool $soloPropias = false): int
     {
-        return $this->notificaciones->contarNoLeidasPara($userId);
+        return $this->notificaciones->contarNoLeidasPara($userId, $soloPropias);
     }
 }

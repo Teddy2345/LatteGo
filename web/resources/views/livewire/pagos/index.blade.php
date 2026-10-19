@@ -43,7 +43,13 @@
                 <tbody class="divide-y divide-linea">
                     @forelse ($pagos as $pago)
                         <tr wire:key="pago-{{ $pago->id }}" class="hover:bg-crema">
-                            <td class="px-4 py-3 text-piedra">{{ $pago->semanaInicio }} &rarr; {{ $pago->semanaFin }}</td>
+                            <td class="px-4 py-3 text-piedra">
+                                {{ $pago->semanaInicio }} &rarr; {{ $pago->semanaFin }}
+                                @if ($pago->secuencia > 0)
+                                    <span class="ml-1 inline-block bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full text-xs font-medium"
+                                          title="Litros de esta semana que llegaron despues de pagar la planilla">Complementario {{ $pago->secuencia }}</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 font-medium text-bosque">{{ $proveedores->get($pago->proveedorId)?->nombre ?? '—' }}</td>
                             <td class="px-4 py-3 text-right text-piedra">{{ number_format($pago->totalLitros, 2) }}</td>
                             <td class="px-4 py-3 text-right text-piedra">S/ {{ number_format($pago->precioLitro, 2) }}</td>

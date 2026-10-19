@@ -15,6 +15,8 @@ final readonly class ActualizarProductoData
         public ?float $stockMinimo,
         public ?string $descripcion = null,
         public ?string $fotoPath = null,
+        public ?float $precioVecino = null,
+        public ?float $precioProveedor = null,
     ) {
     }
 }

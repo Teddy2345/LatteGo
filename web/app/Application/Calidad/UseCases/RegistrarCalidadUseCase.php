@@ -8,8 +8,10 @@ use App\Application\Calidad\DTOs\CalidadData;
 use App\Application\Calidad\DTOs\RegistrarCalidadData;
 use App\Application\Notificacion\DTOs\RegistrarNotificacionData;
 use App\Application\Notificacion\UseCases\RegistrarNotificacionUseCase;
-use App\Application\Proveedor\UseCases\CambiarEstadoProveedorUseCase;
+use App\Domain\Acopio\Repositories\AcopioRepository;
 use App\Domain\Calidad\Entities\Calidad;
+use App\Domain\Calidad\Exceptions\AcopioDeOtroProveedorException;
+use App\Domain\Calidad\Exceptions\AcopioYaAnalizadoException;
 use App\Domain\Calidad\Repositories\CalidadRepository;
 use App\Domain\Calidad\ValueObjects\Densidad;
 use App\Domain\Calidad\ValueObjects\MotivoRechazo;
@@ -27,14 +29,16 @@ use DateTimeImmutable;
 /**
  * Registra un analisis de calidad (LactoScan). La leche se rechaza
  * automaticamente si el agua añadida es mayor a 0% o si la prueba de
- * alcohol es rechazada. Cuando el rechazo es por adulteracion, se escala
- * la sancion segun el historial del proveedor: primera vez, descuento de
- * toda la semana; de la segunda vez en adelante, retiro temporal (que
- * ademas desactiva al proveedor via CambiarEstadoProveedorUseCase).
+ * alcohol es rechazada. Cuando el ganadero añadio agua se le sanciona
+ * segun su historial: la primera vez no se le paga esa entrega; si
+ * reincide, queda suspendido esa semana sin pago.
  *
- * Todo rechazo (adulteracion u otro motivo) genera una notificacion para
- * quien supervisa la planta. Guardar el analisis, aplicar la sancion y
- * registrar la notificacion ocurren en una sola transaccion.
+ * La sancion no toca el estado del proveedor: la suspension se deduce de la
+ * fecha del analisis y vence sola al terminar la semana, sin que nadie tenga
+ * que reactivarlo. El efecto en el pago lo aplica GenerarPlanillaPagoUseCase.
+ *
+ * Todo rechazo genera una notificacion para quien supervisa la planta.
+ * Guardar el analisis y notificar ocurren en una sola transaccion.
  */
 final class RegistrarCalidadUseCase
 {
@@ -44,23 +48,34 @@ final class RegistrarCalidadUseCase
         MotivoRechazo::Otro->value => 'Otro',
     ];
 
-    private const ETIQUETAS_SANCION = [
-        SancionAplicada::DescuentoSemana->value => 'Descuento de la semana',
-        SancionAplicada::RetiroTemporal->value => 'Retiro temporal del proveedor',
-    ];
-
     public function __construct(
         private readonly CalidadRepository $analisis,
-        private readonly CambiarEstadoProveedorUseCase $cambiarEstadoProveedor,
         private readonly RegistrarNotificacionUseCase $notificar,
         private readonly ProveedorRepository $proveedores,
         private readonly RutaRepository $rutas,
         private readonly TransactionManager $transacciones,
+        private readonly AcopioRepository $acopios,
     ) {
     }
 
     public function ejecutar(RegistrarCalidadData $datos): CalidadData
     {
+        // La sancion se cobra al proveedor y el descuento a la entrega: ambos
+        // tienen que ser del mismo ganadero.
+        $acopio = $this->acopios->buscarPorId($datos->acopioId);
+
+        if ($acopio === null) {
+            throw new AcopioDeOtroProveedorException("No existe el acopio {$datos->acopioId}.");
+        }
+
+        if ($acopio->proveedorId !== $datos->proveedorId) {
+            throw new AcopioDeOtroProveedorException('Ese acopio pertenece a otro proveedor.');
+        }
+
+        if ($this->analisis->existeParaAcopio($datos->acopioId)) {
+            throw new AcopioYaAnalizadoException('Ese acopio ya tiene su análisis de calidad registrado.');
+        }
+
         $calidad = Calidad::crear(
             proveedorId: $datos->proveedorId,
             acopioId: $datos->acopioId,
@@ -87,10 +102,6 @@ final class RegistrarCalidadUseCase
         }
 
         return $this->transacciones->run(function () use ($calidad): CalidadData {
-            if ($calidad->sancionAplicada === SancionAplicada::RetiroTemporal) {
-                $this->cambiarEstadoProveedor->ejecutar($calidad->proveedorId, false);
-            }
-
             $guardado = $this->analisis->guardar($calidad);
 
             if ($guardado->resultado === ResultadoCalidad::Rechazada) {
@@ -130,7 +141,7 @@ final class RegistrarCalidadUseCase
         }
 
         if ($calidad->sancionAplicada !== SancionAplicada::Ninguna) {
-            $datos['Sanción'] = self::ETIQUETAS_SANCION[$calidad->sancionAplicada->value] ?? $calidad->sancionAplicada->value;
+            $datos['Sanción'] = $calidad->sancionAplicada->etiqueta();
         }
 
         $this->notificar->ejecutar(new RegistrarNotificacionData(

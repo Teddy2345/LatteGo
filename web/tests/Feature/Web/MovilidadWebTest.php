@@ -7,8 +7,8 @@ use App\Infrastructure\Movilidad\Models\MovilidadModel;
 use App\Infrastructure\Proveedor\Models\ProveedorModel;
 use App\Infrastructure\Proveedor\Models\RutaModel;
 use App\Models\User;
+use App\Presentation\Web\Livewire\Acopio\Index as AcopioIndex;
 use App\Presentation\Web\Livewire\Movilidad\Detalle;
-use App\Presentation\Web\Livewire\Movilidad\Movilidades;
 use App\Presentation\Web\Livewire\Movilidad\RegistroRapido;
 use Database\Seeders\RolePermissionSeeder;
 use Livewire\Livewire;
@@ -23,7 +23,7 @@ function usuarioMovilidad(string $rol): User
     return $user;
 }
 
-test('el acopiador ve las tarjetas de movilidades con metricas reales', function () {
+test('el acopiador ve en Acopios la tarjeta de su movilidad con metricas reales', function () {
     $ruta = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
     $camion = MovilidadModel::create(['nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true]);
     $p1 = ProveedorModel::factory()->create(['ruta_id' => $ruta->id, 'activo' => true]);
@@ -36,16 +36,18 @@ test('el acopiador ve las tarjetas de movilidades con metricas reales', function
     $camion->update(['usuario_id' => $acopiador->id]);
 
     Livewire::actingAs($acopiador)
-        ->test(Movilidades::class)
+        ->test(AcopioIndex::class)
         ->assertOk()
+        ->assertSee('Tu movilidad')
         ->assertSee('Camión 01')
         ->assertSee('1 / 2')
-        ->assertSee('40.0 L');
+        ->assertSee('40.0 L')
+        ->assertSee('50% del recorrido');
 });
 
 test('un usuario sin acopios.registrar ni reportes.ver no ve movilidades', function () {
     Livewire::actingAs(usuarioMovilidad('calidad'))
-        ->test(Movilidades::class)
+        ->test(AcopioIndex::class)
         ->assertForbidden();
 });
 
@@ -128,7 +130,7 @@ test('el acopiador no ve movilidades que no le fueron asignadas', function () {
     MovilidadModel::create(['nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true]);
 
     Livewire::actingAs(usuarioMovilidad('acopiador'))
-        ->test(Movilidades::class)
+        ->test(AcopioIndex::class)
         ->assertOk()
         ->assertDontSee('Camión 01');
 });

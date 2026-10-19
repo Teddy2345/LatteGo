@@ -35,6 +35,16 @@ final class Despacho
         self::validarNoNegativo($quesosRecibidos, 'Los quesos recibidos no pueden ser negativos.');
         self::validarNoNegativo($quesosDespachados, 'Los quesos despachados no pueden ser negativos.');
 
+        // Se tolera recibir mas de lo producido (diferencias de conteo), pero
+        // no se puede sacar de planta mas de lo que llego al despacho.
+        if ($quesosDespachados > $quesosRecibidos) {
+            throw new CantidadDespachoInvalidaException(sprintf(
+                'No se pueden despachar %d quesos si solo se recibieron %d.',
+                $quesosDespachados,
+                $quesosRecibidos,
+            ));
+        }
+
         $merma = max(0, $quesosProducidosReferencia - $quesosRecibidos);
 
         return new self(

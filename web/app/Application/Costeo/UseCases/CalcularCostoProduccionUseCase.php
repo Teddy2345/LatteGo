@@ -71,6 +71,11 @@ final class CalcularCostoProduccionUseCase
      */
     private function calcularCostoLeche(Produccion $produccion): array
     {
+        // Un lote sin leche de acopio no tiene costo de leche que prorratear.
+        if ($produccion->litrosProcesados->valor == 0.0) {
+            return [null, 0.0];
+        }
+
         $semana = SemanaPago::desde($produccion->fecha);
 
         $litrosPorProveedor = [];

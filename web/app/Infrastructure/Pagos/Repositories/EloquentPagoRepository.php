@@ -23,6 +23,7 @@ final class EloquentPagoRepository implements PagoRepository
             'proveedor_id' => $pago->proveedorId,
             'semana_inicio' => $pago->semanaInicio->format('Y-m-d'),
             'semana_fin' => $pago->semanaFin->format('Y-m-d'),
+            'secuencia' => $pago->secuencia,
             'total_litros' => $pago->totalLitros->valor,
             'precio_litro' => $pago->precioLitro,
             'total_pagar' => $pago->totalPagar,
@@ -47,15 +48,28 @@ final class EloquentPagoRepository implements PagoRepository
         $modelo = PagoModel::query()
             ->where('proveedor_id', $proveedorId)
             ->whereDate('semana_inicio', $semanaInicio->format('Y-m-d'))
+            ->where('secuencia', Pago::SECUENCIA_PLANILLA)
             ->first();
 
         return $modelo === null ? null : $this->aDominio($modelo);
+    }
+
+    public function listarPorProveedorYSemana(int $proveedorId, DateTimeImmutable $semanaInicio): array
+    {
+        return PagoModel::query()
+            ->where('proveedor_id', $proveedorId)
+            ->whereDate('semana_inicio', $semanaInicio->format('Y-m-d'))
+            ->orderBy('secuencia')
+            ->get()
+            ->map(fn (PagoModel $modelo) => $this->aDominio($modelo))
+            ->all();
     }
 
     public function listarTodos(): array
     {
         return PagoModel::query()
             ->orderByDesc('semana_inicio')
+            ->orderBy('secuencia')
             ->get()
             ->map(fn (PagoModel $modelo) => $this->aDominio($modelo))
             ->all();
@@ -93,6 +107,7 @@ final class EloquentPagoRepository implements PagoRepository
             totalPagar: (float) $modelo->total_pagar,
             fechaPago: $modelo->fecha_pago === null ? null : new DateTimeImmutable($modelo->fecha_pago->format('Y-m-d')),
             estado: EstadoPago::from($modelo->estado),
+            secuencia: (int) $modelo->secuencia,
         );
     }
 }

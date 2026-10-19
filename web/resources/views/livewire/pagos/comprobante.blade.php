@@ -2,7 +2,7 @@
     <div class="flex items-start justify-between mb-8">
         <div>
             <h1 class="text-xl font-bold">{{ config('app.name') }}</h1>
-            <p class="text-sm text-piedra">Comprobante de pago</p>
+            <p class="text-sm text-piedra">{{ $pago->secuencia > 0 ? 'Comprobante de pago complementario' : 'Comprobante de pago' }}</p>
         </div>
         <button onclick="window.print()" class="print:hidden bg-campo text-white px-4 py-2 rounded-md text-sm hover:bg-bosque">
             Imprimir
@@ -18,6 +18,11 @@
 
         <dt class="text-piedra">Semana de acopio</dt>
         <dd class="text-right">{{ $pago->semanaInicio }} &rarr; {{ $pago->semanaFin }}</dd>
+
+        @if ($pago->secuencia > 0)
+            <dt class="text-piedra">Motivo</dt>
+            <dd class="text-right">Litros de esta semana registrados después de pagar la planilla</dd>
+        @endif
 
         <dt class="text-piedra">Total litros</dt>
         <dd class="text-right">{{ number_format($pago->totalLitros, 2) }} L</dd>

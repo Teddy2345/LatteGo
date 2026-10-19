@@ -54,3 +54,14 @@ test('rechaza cantidades negativas', function () {
         observaciones: null,
     );
 })->throws(CantidadDespachoInvalidaException::class);
+
+test('no se pueden despachar mas quesos de los que se recibieron', function () {
+    Despacho::crear(
+        produccionId: 1,
+        despachadorId: null,
+        quesosProducidosReferencia: 100,
+        quesosRecibidos: 100,
+        quesosDespachados: 500,
+        observaciones: null,
+    );
+})->throws(CantidadDespachoInvalidaException::class, 'No se pueden despachar 500 quesos si solo se recibieron 100.');

@@ -26,6 +26,8 @@ final readonly class Notificacion
         public NivelNotificacion $nivel,
         public array $datos,
         public ?DateTimeImmutable $creadaEn,
+        /** Dueño de la alerta; null = para todo el personal de la planta. */
+        public ?int $usuarioId = null,
     ) {
     }
 }

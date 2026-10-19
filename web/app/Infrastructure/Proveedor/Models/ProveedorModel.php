@@ -28,6 +28,7 @@ final class ProveedorModel extends Model
         'precio_litro',
         'activo',
         'ruta_id',
+        'user_id',
     ];
 
     protected function casts(): array

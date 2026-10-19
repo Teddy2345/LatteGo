@@ -29,6 +29,8 @@ final class RegistrarProductoUseCase
             categoria: $datos->categoria,
             unidad: $datos->unidad,
             precioReferencia: $datos->precioReferencia,
+            precioVecino: $datos->precioVecino,
+            precioProveedor: $datos->precioProveedor,
             stockMinimo: $datos->stockMinimo,
             activo: true,
             descripcion: $datos->descripcion,

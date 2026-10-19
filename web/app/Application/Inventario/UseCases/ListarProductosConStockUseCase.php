@@ -48,6 +48,8 @@ final class ListarProductosConStockUseCase
                     categoria: $producto->categoria,
                     unidad: $producto->unidad,
                     precioReferencia: $producto->precioReferencia,
+                    precioVecino: $producto->precioVecino,
+                    precioProveedor: $producto->precioProveedor,
                     stockMinimo: $producto->stockMinimo,
                     stock: $stockActual,
                     stockBajo: $producto->stockMinimo !== null && $stockActual <= $producto->stockMinimo,

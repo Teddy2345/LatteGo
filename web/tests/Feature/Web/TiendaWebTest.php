@@ -94,6 +94,8 @@ test('un producto sin existencia se muestra agotado en lugar del boton de agrega
 test('ventas ve la bandeja de pedidos y puede confirmar uno pendiente', function () {
     $pedido = PedidoModel::factory()->create(['cliente_nombre' => 'Cliente Web']);
     $producto = ProductoModel::factory()->create(['tipo' => 'producto_terminado']);
+    // Confirmar reserva la mercaderia: tiene que haber stock.
+    MovimientoInventarioModel::factory()->create(['producto_id' => $producto->id, 'tipo' => 'produccion', 'cantidad' => 10]);
     $pedido->items()->create(['producto_id' => $producto->id, 'nombre_producto' => $producto->nombre, 'cantidad' => 2, 'precio_unitario' => 10]);
 
     Livewire::actingAs(usuarioVentasPedidos())

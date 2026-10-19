@@ -12,6 +12,7 @@ use App\Domain\Inventario\Exceptions\StockInsuficienteException;
 use App\Domain\Inventario\Repositories\MovimientoInventarioRepository;
 use App\Domain\Inventario\Repositories\ProductoRepository;
 use App\Domain\Inventario\ValueObjects\CantidadProducto;
+use App\Domain\Inventario\ValueObjects\TipoProducto;
 use DateTimeImmutable;
 
 /**
@@ -45,6 +46,8 @@ final class RegistrarSalidaInsumoUseCase
         if ($producto === null) {
             throw new ProductoNoEncontradoException("No existe un producto con id {$datos->productoId}.");
         }
+
+        $producto->exigirTipo(TipoProducto::Insumo, 'una salida de insumos');
 
         $cantidad = new CantidadProducto($datos->cantidad);
         $disponible = $this->movimientos->stockDe($datos->productoId);

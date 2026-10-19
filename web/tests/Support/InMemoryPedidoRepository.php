@@ -64,4 +64,23 @@ final class InMemoryPedidoRepository implements PedidoRepository
             static fn (Pedido $p): bool => $p->repartidorId === $repartidorId,
         ));
     }
+
+    public function cantidadReservada(int $productoId, ?int $exceptoPedidoId = null): float
+    {
+        $total = 0.0;
+
+        foreach ($this->pedidos as $pedido) {
+            if ($pedido->estado !== EstadoPedido::Confirmado || $pedido->id === $exceptoPedidoId) {
+                continue;
+            }
+
+            foreach ($pedido->items as $item) {
+                if ($item->productoId === $productoId) {
+                    $total += $item->cantidad;
+                }
+            }
+        }
+
+        return round($total, 2);
+    }
 }

@@ -76,15 +76,15 @@ test('sin adulteracion no aplica sancion', function () {
     expect($calidad->determinarSancion(0))->toBe(SancionAplicada::Ninguna);
 });
 
-test('primera adulteracion descuenta la semana', function () {
+test('la primera vez que añade agua esa entrega queda sin pago', function () {
     $calidad = analisisValido(['aguaAgregada' => new PorcentajeAguaAgregada(1.0)]);
 
-    expect($calidad->determinarSancion(0))->toBe(SancionAplicada::DescuentoSemana);
+    expect($calidad->determinarSancion(0))->toBe(SancionAplicada::SinPagoEntrega);
 });
 
-test('segunda adulteracion en adelante retira temporalmente', function () {
+test('si reincide, en cualquier momento, se suspende la semana', function () {
     $calidad = analisisValido(['aguaAgregada' => new PorcentajeAguaAgregada(1.0)]);
 
-    expect($calidad->determinarSancion(1))->toBe(SancionAplicada::RetiroTemporal)
-        ->and($calidad->determinarSancion(5))->toBe(SancionAplicada::RetiroTemporal);
+    expect($calidad->determinarSancion(1))->toBe(SancionAplicada::SuspensionSemana)
+        ->and($calidad->determinarSancion(5))->toBe(SancionAplicada::SuspensionSemana);
 });

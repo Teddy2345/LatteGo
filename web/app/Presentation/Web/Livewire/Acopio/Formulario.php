@@ -12,6 +12,7 @@ use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Domain\Acopio\Exceptions\AcopioException;
 use App\Domain\Movilidad\Repositories\MovilidadRepository;
 use App\Infrastructure\Acopio\Models\AcopioModel;
+use App\Presentation\Support\AlcanceProveedores;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -23,7 +24,7 @@ final class Formulario extends Component
     #[Validate('required|integer')]
     public ?int $proveedorId = null;
 
-    #[Validate('required|date')]
+    #[Validate('required|date|before_or_equal:today')]
     public string $fecha = '';
 
     #[Validate('required|numeric|min:0.01')]
@@ -124,10 +125,6 @@ final class Formulario extends Component
      */
     private function rutaPermitida(MovilidadRepository $movilidades): ?int
     {
-        if (auth()->user()->can('reportes.ver')) {
-            return null;
-        }
-
-        return $movilidades->buscarPorUsuario(auth()->id())?->rutaId ?? 0;
+        return AlcanceProveedores::rutaPermitida(auth()->user());
     }
 }

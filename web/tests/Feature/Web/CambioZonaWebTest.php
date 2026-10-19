@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Application\Proveedor\UseCases\CrearCuentaProveedorUseCase;
 use App\Infrastructure\Proveedor\Models\ProveedorModel;
 use App\Infrastructure\Proveedor\Models\RutaModel;
 use App\Infrastructure\Proveedor\Models\SolicitudCambioZonaModel;
@@ -21,30 +22,48 @@ function usuarioCambioZona(string $rol): User
     return $user;
 }
 
-test('el acopiador solicita un cambio de zona desde el detalle de su movilidad', function () {
+/** Un proveedor con su cuenta de la app: es quien pide su propio traslado. */
+function proveedorQuePide(RutaModel $ruta, string $nombre = 'Ana Flores'): array
+{
+    app(RolePermissionSeeder::class)->run();
+
+    $proveedor = ProveedorModel::factory()->create([
+        'nombre' => $nombre, 'cedula' => (string) random_int(1000000, 9999999),
+        'ruta_id' => $ruta->id, 'activo' => true,
+    ]);
+
+    app(CrearCuentaProveedorUseCase::class)->ejecutar($proveedor->id);
+
+    return [$proveedor->fresh(), User::query()->findOrFail($proveedor->fresh()->user_id)];
+}
+
+/** Hace la petición tal como la manda su app. */
+function pedirTraslado(User $usuario, RutaModel $destino, ?string $motivo = null): \Illuminate\Testing\TestResponse
+{
+    app('auth')->forgetGuards();
+    Laravel\Sanctum\Sanctum::actingAs($usuario, ['*']);
+
+    return test()->postJson('/api/v1/mobile/proveedor/cambio-zona', [
+        'ruta_solicitada_id' => $destino->id,
+        'fecha_cambio' => now()->format('Y-m-d'),
+        'motivo' => $motivo,
+    ]);
+}
+test('el proveedor pide su propio cambio de zona desde la app', function () {
     $rutaActual = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
     $rutaNueva = RutaModel::create(['nombre' => 'Batallas', 'activa' => true]);
-    $camion = \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
-        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $rutaActual->id, 'activa' => true,
-    ]);
-    $proveedor = ProveedorModel::factory()->create(['nombre' => 'Ana Flores', 'ruta_id' => $rutaActual->id, 'activo' => true]);
-    $acopiador = usuarioCambioZona('acopiador');
-    $camion->update(['usuario_id' => $acopiador->id]);
+    [$proveedor, $usuario] = proveedorQuePide($rutaActual);
 
-    Livewire::actingAs($acopiador)
-        ->test(MovilidadDetalle::class, ['movilidadId' => $camion->id])
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $rutaNueva->id)
-        ->set('motivoCambioZona', 'Se muda a Batallas')
-        ->call('confirmarCambioZona')
-        ->assertSee('pendiente de aprobación');
+    pedirTraslado($usuario, $rutaNueva, 'Me mudo a Batallas')
+        ->assertCreated()
+        ->assertJsonPath('data.estado', 'pendiente');
 
     $this->assertDatabaseHas('solicitudes_cambio_zona', [
         'proveedor_id' => $proveedor->id,
         'ruta_actual_id' => $rutaActual->id,
         'ruta_solicitada_id' => $rutaNueva->id,
         'estado' => 'pendiente',
-        'solicitado_por' => $acopiador->id,
+        'solicitado_por' => $usuario->id,
     ]);
     // La ruta del proveedor NO cambia todavia: falta la aprobacion.
     expect($proveedor->fresh()->ruta_id)->toBe($rutaActual->id);
@@ -53,22 +72,12 @@ test('el acopiador solicita un cambio de zona desde el detalle de su movilidad',
 test('no se puede duplicar una solicitud mientras la anterior siga pendiente', function () {
     $ruta = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
     $otraRuta = RutaModel::create(['nombre' => 'Batallas', 'activa' => true]);
-    $camion = \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
-        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true,
-    ]);
-    $proveedor = ProveedorModel::factory()->create(['ruta_id' => $ruta->id, 'activo' => true]);
-    $acopiador = usuarioCambioZona('acopiador');
-    $camion->update(['usuario_id' => $acopiador->id]);
+    [$proveedor, $usuario] = proveedorQuePide($ruta);
 
-    Livewire::actingAs($acopiador)
-        ->test(MovilidadDetalle::class, ['movilidadId' => $camion->id])
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $otraRuta->id)
-        ->call('confirmarCambioZona')
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $otraRuta->id)
-        ->call('confirmarCambioZona')
-        ->assertSee('ya tiene una solicitud de cambio de zona pendiente');
+    pedirTraslado($usuario, $otraRuta)->assertCreated();
+    pedirTraslado($usuario, $otraRuta)
+        ->assertStatus(422)
+        ->assertSee('ya tiene una solicitud de cambio de zona pendiente', false);
 
     expect(SolicitudCambioZonaModel::where('proveedor_id', $proveedor->id)->count())->toBe(1);
 });
@@ -155,22 +164,12 @@ test('la bandeja de aprobacion esta cerrada para quien no edita proveedores', fu
 
 test('solicitar un cambio de zona avisa a quien supervisa la planta', function () {
     // Sin el aviso, la solicitud queda esperando en una bandeja que nadie
-    // sabe que tiene algo: el acopiador la pide desde el campo.
+    // sabe que tiene algo: el proveedor la pide desde su casa.
     $rutaActual = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
     $rutaNueva = RutaModel::create(['nombre' => 'Batallas', 'activa' => true]);
-    $camion = \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
-        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $rutaActual->id, 'activa' => true,
-    ]);
-    $proveedor = ProveedorModel::factory()->create(['nombre' => 'Ana Flores', 'ruta_id' => $rutaActual->id, 'activo' => true]);
-    $acopiador = usuarioCambioZona('acopiador');
-    $camion->update(['usuario_id' => $acopiador->id]);
+    [, $usuario] = proveedorQuePide($rutaActual);
 
-    Livewire::actingAs($acopiador)
-        ->test(MovilidadDetalle::class, ['movilidadId' => $camion->id])
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $rutaNueva->id)
-        ->set('motivoCambioZona', 'Se muda a Batallas')
-        ->call('confirmarCambioZona');
+    pedirTraslado($usuario, $rutaNueva, 'Se muda a Batallas')->assertCreated();
 
     $this->assertDatabaseHas('notificaciones', [
         'tipo' => 'cambio_zona_solicitado',
@@ -179,6 +178,7 @@ test('solicitar un cambio de zona avisa a quien supervisa la planta', function (
         'nivel' => 'advertencia',
     ]);
 
+    app('auth')->forgetGuards();
     Livewire::actingAs(usuarioCambioZona('admin'))
         ->test(\App\Presentation\Web\Livewire\Notificacion\Centro::class)
         ->assertSee('Cambio de zona por aprobar')
@@ -190,36 +190,23 @@ test('solicitar un cambio de zona avisa a quien supervisa la planta', function (
 test('una solicitud rechazada por duplicada no genera un segundo aviso', function () {
     $ruta = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
     $otraRuta = RutaModel::create(['nombre' => 'Batallas', 'activa' => true]);
-    $camion = \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
-        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true,
-    ]);
-    $proveedor = ProveedorModel::factory()->create(['ruta_id' => $ruta->id, 'activo' => true]);
-    $acopiador = usuarioCambioZona('acopiador');
-    $camion->update(['usuario_id' => $acopiador->id]);
+    [, $usuario] = proveedorQuePide($ruta);
 
-    Livewire::actingAs($acopiador)
-        ->test(MovilidadDetalle::class, ['movilidadId' => $camion->id])
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $otraRuta->id)
-        ->call('confirmarCambioZona')
-        ->call('abrirCambioZona', $proveedor->id)
-        ->set('rutaSolicitadaId', $otraRuta->id)
-        ->call('confirmarCambioZona');
+    pedirTraslado($usuario, $otraRuta)->assertCreated();
+    pedirTraslado($usuario, $otraRuta)->assertStatus(422);
 
     expect(\App\Infrastructure\Notificacion\Models\NotificacionModel::where('tipo', 'cambio_zona_solicitado')->count())->toBe(1);
 });
 
-test('el supervisor puede ver el recorrido pero no solicitar un cambio de zona', function () {
-    // Ve el recorrido porque tiene reportes.ver, pero solicitar un cambio de
-    // zona es una accion de campo (acopios.registrar), no de reportes.
+test('ni el acopiador ni el supervisor pueden pedir el traslado de un proveedor', function () {
+    // El traslado lo pide quien se muda. La planta solo lo aprueba.
     $ruta = RutaModel::create(['nombre' => 'Huata Centro', 'activa' => true]);
-    $camion = \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
-        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true,
-    ]);
-    $proveedor = ProveedorModel::factory()->create(['ruta_id' => $ruta->id, 'activo' => true]);
+    $otraRuta = RutaModel::create(['nombre' => 'Batallas', 'activa' => true]);
+    proveedorQuePide($ruta);
 
-    Livewire::actingAs(usuarioCambioZona('supervisor'))
-        ->test(MovilidadDetalle::class, ['movilidadId' => $camion->id])
-        ->call('abrirCambioZona', $proveedor->id)
-        ->assertForbidden();
+    foreach (['acopiador', 'supervisor', 'admin'] as $rol) {
+        pedirTraslado(usuarioCambioZona($rol), $otraRuta)->assertForbidden();
+    }
+
+    expect(SolicitudCambioZonaModel::count())->toBe(0);
 });

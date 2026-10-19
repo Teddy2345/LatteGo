@@ -17,6 +17,7 @@ use App\Application\Proveedor\DTOs\RegistrarProveedorData;
 use App\Application\Proveedor\UseCases\RegistrarProveedorUseCase;
 use App\Domain\Produccion\Exceptions\ProduccionNoEncontradaException;
 use Tests\Support\InMemoryAcopioRepository;
+use Tests\Support\InMemoryCalidadRepository;
 use Tests\Support\InMemoryMovimientoInventarioRepository;
 use Tests\Support\InMemoryProduccionRepository;
 use Tests\Support\InMemoryProductoRepository;
@@ -40,7 +41,7 @@ function crearContextoCosteo(): array
 
     return [
         new RegistrarProveedorUseCase($proveedorRepo),
-        new RegistrarAcopioUseCase($acopioRepo),
+        new RegistrarAcopioUseCase($acopioRepo, new InMemoryCalidadRepository(), new InMemoryProveedorRepository()),
         new SincronizarAcopioUseCase($acopioRepo),
         new RegistrarProductoUseCase($productoRepo),
         new RegistrarEntradaInsumoUseCase($movimientoRepo, $productoRepo),

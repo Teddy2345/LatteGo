@@ -8,6 +8,7 @@ use App\Application\Proveedor\DTOs\ActualizarProveedorData;
 use App\Application\Proveedor\DTOs\RegistrarProveedorData;
 use App\Application\Proveedor\UseCases\ActualizarProveedorUseCase;
 use App\Application\Proveedor\UseCases\ListarRutasDisponiblesUseCase;
+use App\Application\Proveedor\UseCases\ObtenerPrecioLitroVigenteUseCase;
 use App\Application\Proveedor\UseCases\ObtenerProveedorUseCase;
 use App\Application\Proveedor\UseCases\ReasignarRutaProveedorUseCase;
 use App\Application\Proveedor\UseCases\RegistrarProveedorUseCase;
@@ -15,14 +16,17 @@ use App\Domain\Proveedor\Exceptions\ProveedorException;
 use App\Infrastructure\Proveedor\Models\ProveedorModel;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 final class Formulario extends Component
 {
+    #[Locked]
     public ?int $proveedorId = null;
 
+    #[Locked]
     public ?int $rutaOriginal = null;
 
     #[Validate('required|string|max:120')]
@@ -39,9 +43,6 @@ final class Formulario extends Component
 
     #[Validate('required|integer|min:0')]
     public int $litrosProm = 0;
-
-    #[Validate('required|numeric|min:0.01')]
-    public float $precioLitro = 0.0;
 
     #[Validate('nullable|integer')]
     public ?int $rutaId = null;
@@ -66,15 +67,21 @@ final class Formulario extends Component
         $this->telefono = $proveedor->telefono;
         $this->finca = $proveedor->finca;
         $this->litrosProm = $proveedor->litrosProm;
-        $this->precioLitro = $proveedor->precioLitro;
         $this->rutaId = $proveedor->rutaId;
         $this->rutaOriginal = $proveedor->rutaId;
     }
 
+    /**
+     * El precio por litro es general: nunca se toma de este formulario. Un
+     * proveedor nuevo recibe el precio vigente y editar uno conserva el que
+     * ya tiene; solo "Precio por litro" en el listado lo cambia, para todos.
+     */
     public function guardar(
         RegistrarProveedorUseCase $registrar,
         ActualizarProveedorUseCase $actualizar,
         ReasignarRutaProveedorUseCase $reasignarRuta,
+        ObtenerPrecioLitroVigenteUseCase $precioVigente,
+        ObtenerProveedorUseCase $obtener,
     ): void {
         $this->authorize($this->proveedorId === null ? 'create' : 'update', ProveedorModel::class);
 
@@ -89,7 +96,7 @@ final class Formulario extends Component
                     telefono: $this->telefono,
                     finca: $this->finca,
                     litrosProm: $this->litrosProm,
-                    precioLitro: $this->precioLitro,
+                    precioLitro: $precioVigente->ejecutar(),
                     rutaId: $this->rutaId,
                 ));
             } else {
@@ -99,7 +106,7 @@ final class Formulario extends Component
                     telefono: $this->telefono,
                     finca: $this->finca,
                     litrosProm: $this->litrosProm,
-                    precioLitro: $this->precioLitro,
+                    precioLitro: $obtener->ejecutar($this->proveedorId)->precioLitro,
                 ));
 
                 if ($this->rutaId !== $this->rutaOriginal) {
@@ -115,10 +122,11 @@ final class Formulario extends Component
         $this->redirect(route('proveedores.index'), navigate: true);
     }
 
-    public function render(ListarRutasDisponiblesUseCase $listarRutas): View
+    public function render(ListarRutasDisponiblesUseCase $listarRutas, ObtenerPrecioLitroVigenteUseCase $precioVigente): View
     {
         return view('livewire.proveedor.formulario', [
             'rutas' => $listarRutas->ejecutar(),
+            'precioVigente' => $precioVigente->ejecutar(),
         ]);
     }
 }

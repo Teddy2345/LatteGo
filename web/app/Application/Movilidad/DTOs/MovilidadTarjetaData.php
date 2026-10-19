@@ -15,6 +15,7 @@ final readonly class MovilidadTarjetaData
         public int $proveedoresAtendidos,
         public float $litrosRecolectadosHoy,
         public int $progresoPorcentaje,
+        public ?int $usuarioId = null,
     ) {
     }
 }

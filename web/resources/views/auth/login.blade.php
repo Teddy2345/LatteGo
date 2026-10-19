@@ -30,7 +30,10 @@
         </div>
 
         <div x-data="{ visible: false }">
-            <label for="password" class="block text-sm font-medium text-bosque mb-1">Contrasena</label>
+            <div class="flex items-baseline justify-between gap-2 mb-1">
+                <label for="password" class="block text-sm font-medium text-bosque">Contrasena</label>
+                <a href="{{ route('password.request') }}" class="text-xs text-campo hover:underline">¿Olvidaste tu contraseña?</a>
+            </div>
             <div class="relative">
                 <input :type="visible ? 'text' : 'password'" id="password" name="password" required
                        class="w-full rounded-xl border-linea bg-white shadow-sm text-sm focus:border-campo focus:ring-campo pr-11">

@@ -24,6 +24,7 @@ final class ProduccionResource extends JsonResource
             'rendimiento_en_rango_esperado' => $this->rendimientoEnRangoEsperado,
             'jefa_produccion_id' => $this->jefaProduccionId,
             'observaciones' => $this->observaciones,
+            'resultados' => $this->resultados,
         ];
     }
 }

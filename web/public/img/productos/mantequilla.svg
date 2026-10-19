@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Mantequilla artesanal">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF6E6"/>
+      <stop offset="1" stop-color="#F1E8C9"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FBE69A"/>
+      <stop offset="1" stop-color="#F4D35E"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#fondo)"/>
+  <circle cx="330" cy="55" r="55" fill="#F3E3AE" opacity=".6"/>
+  <ellipse cx="200" cy="205" rx="130" ry="15" fill="#173E32" opacity=".10"/>
+  <!-- papel -->
+  <path d="M70 175 L200 205 L330 175 L200 150 Z" fill="#FFFFFF"/>
+  <path d="M70 175 L200 205 L200 212 L70 182 Z" fill="#EFEADB"/>
+  <path d="M330 175 L200 205 L200 212 L330 182 Z" fill="#E4DCC4"/>
+  <!-- bloque -->
+  <path d="M120 150 L200 168 L280 150 L200 132 Z" fill="url(#top)"/>
+  <path d="M120 150 L120 108 L200 90 L200 132 Z" fill="#F4D35E"/>
+  <path d="M120 108 L200 126 L280 108 L200 90 Z" fill="#FBEAAB"/>
+  <path d="M120 150 L120 108 L200 126 L200 168 Z" fill="#EFC63F"/>
+  <path d="M200 168 L200 126 L280 108 L280 150 Z" fill="#E2B32C"/>
+  <!-- rizo de mantequilla -->
+  <path d="M168 110 Q190 96 214 106 Q196 112 176 116 Z" fill="#FFF4C7"/>
+  <!-- cuchillo -->
+  <g transform="translate(250 92) rotate(-24)">
+    <rect x="0" y="-5" width="70" height="12" rx="6" fill="#356B50"/>
+    <path d="M-60 -3 L0 -5 L0 7 L-60 5 Q-68 1 -60 -3 Z" fill="#D7DDD8"/>
+    <path d="M-60 -3 L0 -5 L0 0 L-62 1 Z" fill="#EEF1EE"/>
+  </g>
+</svg>

@@ -16,7 +16,9 @@ final class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            // El personal entra con su correo; el proveedor, con su cedula.
+            'email' => ['required_without:cedula', 'nullable', 'email'],
+            'cedula' => ['required_without:email', 'nullable', 'string', 'max:30'],
             'password' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:255'],
         ];

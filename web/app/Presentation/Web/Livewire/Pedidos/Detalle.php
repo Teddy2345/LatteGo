@@ -10,23 +10,28 @@ use App\Application\Pedidos\UseCases\CancelarPedidoUseCase;
 use App\Application\Pedidos\UseCases\ConfirmarPedidoUseCase;
 use App\Application\Pedidos\UseCases\EntregarPedidoUseCase;
 use App\Application\Pedidos\UseCases\ObtenerPedidoUseCase;
-use App\Domain\Pedidos\Exceptions\PedidoException;
+use App\Domain\Shared\Exceptions\DomainRuleException;
 use App\Infrastructure\Pedidos\Models\PedidoModel;
 use App\Models\User;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 final class Detalle extends Component
 {
+    #[Locked]
     public int $pedidoId;
 
     public ?int $repartidorId = null;
 
     #[Validate('required|in:efectivo,transferencia,qr')]
     public string $metodoPago = 'efectivo';
+
+    /** Numero de operacion; solo lo pide lo que no es efectivo. */
+    public string $referenciaPago = '';
 
     #[Validate('required|numeric|min:0.01')]
     public float $montoCobrado = 0.0;
@@ -69,7 +74,7 @@ final class Detalle extends Component
 
         try {
             $confirmar->ejecutar($this->pedidoId);
-        } catch (PedidoException $e) {
+        } catch (DomainRuleException $e) {
             $this->error = $e->getMessage();
         }
     }
@@ -80,7 +85,7 @@ final class Detalle extends Component
 
         try {
             $cancelar->ejecutar($this->pedidoId);
-        } catch (PedidoException $e) {
+        } catch (DomainRuleException $e) {
             $this->error = $e->getMessage();
         }
     }
@@ -94,7 +99,7 @@ final class Detalle extends Component
 
         try {
             $asignar->ejecutar($this->pedidoId, (int) $this->repartidorId);
-        } catch (PedidoException $e) {
+        } catch (DomainRuleException $e) {
             $this->error = $e->getMessage();
         }
     }
@@ -107,10 +112,14 @@ final class Detalle extends Component
         $this->autorizarPedidoPropio($this->pedidoId);
 
         $this->validate([
-            'metodoPago' => 'required|in:efectivo,transferencia,qr',
+            'metodoPago' => 'required|in:efectivo,transferencia,qr,yape',
             'montoCobrado' => 'required|numeric|min:0.01',
             'fechaEntrega' => 'required|date',
-        ]);
+            // El efectivo no deja comprobante; el resto si.
+            'referenciaPago' => $this->metodoPago === 'efectivo'
+                ? 'nullable|string|max:40'
+                : 'required|string|max:40',
+        ], [], ['referenciaPago' => 'número de operación']);
         $this->error = '';
 
         try {
@@ -119,8 +128,9 @@ final class Detalle extends Component
                 metodoPago: $this->metodoPago,
                 montoCobrado: $this->montoCobrado,
                 fechaEntrega: $this->fechaEntrega,
+                referenciaPago: trim($this->referenciaPago) === '' ? null : trim($this->referenciaPago),
             ));
-        } catch (PedidoException $e) {
+        } catch (DomainRuleException $e) {
             $this->error = $e->getMessage();
         }
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Infrastructure\Acopio\Providers\AcopioServiceProvider;
 use App\Infrastructure\Auditoria\Providers\AuditoriaServiceProvider;
 use App\Infrastructure\Calidad\Providers\CalidadServiceProvider;
+use App\Infrastructure\Comprobantes\Providers\ComprobantesServiceProvider;
 use App\Infrastructure\Inventario\Providers\InventarioServiceProvider;
 use App\Infrastructure\Movilidad\Providers\MovilidadServiceProvider;
 use App\Infrastructure\Notificacion\Providers\NotificacionServiceProvider;
@@ -26,6 +27,7 @@ return [
     PagosServiceProvider::class,
     PedidosServiceProvider::class,
     InventarioServiceProvider::class,
+    ComprobantesServiceProvider::class,
     AuditoriaServiceProvider::class,
     NotificacionServiceProvider::class,
 ];

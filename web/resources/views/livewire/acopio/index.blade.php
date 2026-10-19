@@ -1,62 +1,67 @@
 <div class="max-w-7xl mx-auto">
     <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-semibold text-bosque">Acopios</h1>
-                <p class="text-sm text-piedra mt-1">Registro de leche recolectada en campo.</p>
-            </div>
+        <div>
+            <h1 class="text-2xl font-semibold text-bosque">Acopios</h1>
+            <p class="text-sm text-piedra mt-1">Registro de leche recolectada en campo.</p>
+        </div>
 
+        <div class="flex flex-wrap items-center gap-2">
             @can('gestionar', App\Infrastructure\Movilidad\Models\MovilidadModel::class)
-            <div class="ml-2">
-                <div class="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-linea shadow-sm">
-                    <button type="button" wire:click="abrirModalRutas" class="flex items-center gap-2">
-                        <!-- Camión animado (CSS inline): ruedas girando y cuerpo rebotando -->
-                        <svg class="h-8 w-12" viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
-                            <style>
-                                .truck-body { fill: #0f766e; transform-box: fill-box; transform-origin: center; animation: bounce 1s ease-in-out infinite; }
-                                .truck-cab { fill: #115e59; }
-                                .wheel { fill: #0b3b2e; transform-box: fill-box; transform-origin: center; animation: spin 1s linear infinite; }
-                                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                                @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-                            </style>
-
-                            <!-- Cuerpo del camión -->
-                            <g class="truck-body">
-                                <rect x="2" y="10" width="38" height="18" rx="3" />
-                            </g>
-                            <g class="truck-cab">
-                                <rect x="40" y="14" width="14" height="12" rx="2" />
-                                <rect x="43" y="17" width="6" height="6" rx="1" fill="#ffffff" fill-opacity="0.95" />
-                            </g>
-
-                            <!-- Ruedas -->
-                            <g>
-                                <g class="wheel" transform="translate(18 30)">
-                                    <circle cx="0" cy="0" r="4" />
-                                </g>
-                                <g class="wheel" transform="translate(46 30)">
-                                    <circle cx="0" cy="0" r="4" />
-                                </g>
-                            </g>
-                        </svg>
-                        <span class="text-sm text-piedra">Rutas y Camiones</span>
-                    </button>
-
-                    @if (Route::has('rutas.index'))
-                        <a href="{{ route('rutas.index') }}" class="ml-2 text-campo text-sm hover:underline">Ir a gestión de rutas</a>
-                    @endif
-                </div>
-            </div>
+                <button type="button" wire:click="abrirModalRutas"
+                        class="inline-flex items-center gap-1.5 bg-white border border-linea text-campo px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:border-campo">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>
+                    Gestionar rutas y camiones
+                </button>
             @endcan
-        @can('create', App\Infrastructure\Acopio\Models\AcopioModel::class)
-            <a href="{{ route('acopios.crear') }}" wire:navigate
-               class="inline-flex items-center gap-1.5 bg-campo text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-bosque">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                Nuevo acopio
-            </a>
-        @endcan
+            @can('create', App\Infrastructure\Acopio\Models\AcopioModel::class)
+                <a href="{{ route('acopios.crear') }}" wire:navigate
+                   class="inline-flex items-center gap-1.5 bg-campo text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-bosque">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    Nuevo acopio
+                </a>
+            @endcan
+        </div>
     </div>
+
+    @if (count($movilidades) > 0)
+        <section aria-labelledby="titulo-movilidades">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                <h2 id="titulo-movilidades" class="text-lg font-semibold text-bosque">{{ $soloSuMovilidad ? 'Tu movilidad' : 'Camiones y motocarga' }}</h2>
+                <p class="text-xs text-piedra">Avance de hoy. Elige una para ver su ruta en el mapa y los proveedores que atiende.</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                @foreach ($movilidades as $movilidad)
+                    <button type="button" wire:key="movilidad-{{ $movilidad->id }}" wire:click="verCobertura({{ $movilidad->id }})"
+                            class="group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-campo rounded-2xl">
+                        <x-movilidad.tarjeta :movilidad="$movilidad"
+                                             class="h-full transition hover:border-campo hover:shadow-md">
+                            {{-- Avance del recorrido de hoy: antes vivia en la pantalla
+                                 de Movilidades, que ahora se atiende desde aqui. --}}
+                            <dl class="mt-2 space-y-1 text-xs">
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <dt class="text-piedra">Proveedores</dt>
+                                    <dd class="font-semibold text-bosque">{{ $movilidad->proveedoresAtendidos }} / {{ $movilidad->totalProveedores }}</dd>
+                                </div>
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <dt class="text-piedra">Litros hoy</dt>
+                                    <dd class="font-semibold text-bosque">{{ number_format($movilidad->litrosRecolectadosHoy, 1) }} L</dd>
+                                </div>
+                            </dl>
+
+                            <div class="mt-2">
+                                <div class="h-1.5 bg-crema rounded-full overflow-hidden">
+                                    <div class="h-full bg-campo transition-all" style="width: {{ $movilidad->progresoPorcentaje }}%"></div>
+                                </div>
+                                <p class="text-xs text-piedra mt-1">{{ $movilidad->progresoPorcentaje }}% del recorrido</p>
+                            </div>
+                        </x-movilidad.tarjeta>
+                    </button>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <select wire:model.live="filtroEstado"
             class="rounded-lg border-linea shadow-sm text-sm focus:border-campo focus:ring-campo">
@@ -131,7 +136,95 @@
         </div>
     </div>
     </div>
-</div>
+
+@if ($cobertura)
+    @php
+        $paradas = $cobertura->paradasReferencia;
+        $esPlanta = $cobertura->tipo === 'planta';
+    @endphp
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4" wire:key="cobertura-{{ $cobertura->id }}"
+         x-data x-on:keydown.escape.window="$wire.cerrarCobertura()" role="dialog" aria-modal="true" aria-labelledby="titulo-cobertura">
+        <div class="fixed inset-0 bg-black/50" wire:click="cerrarCobertura"></div>
+
+        <div class="relative z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl">
+            <div class="flex items-center gap-4 p-5 border-b border-linea">
+                <div class="w-28 shrink-0 overflow-hidden rounded-xl border border-linea">
+                    <x-movilidad.imagen :tipo="$cobertura->tipo" class="aspect-[8/5]" />
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="titulo-cobertura" class="text-xl font-semibold text-bosque">{{ $cobertura->nombre }}</h3>
+                    <p class="text-sm text-piedra">
+                        {{ $esPlanta ? 'Proveedores que entregan directo en planta' : 'Ruta '.($cobertura->rutaNombre ?? 'sin asignar') }}
+                    </p>
+                    <p class="text-xs text-piedra mt-0.5">
+                        Acopiador titular: {{ $cobertura->usuarioId !== null ? ($titulares[$cobertura->usuarioId] ?? '—') : 'sin asignar' }}
+                    </p>
+                </div>
+                <button type="button" wire:click="cerrarCobertura" class="self-start text-sm text-piedra hover:text-bosque">Cerrar</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-5 p-5">
+                <div class="md:col-span-3">
+                    <div class="overflow-hidden rounded-xl border border-linea bg-crema">
+                        <iframe src="{{ App\Presentation\Support\MapaReferencial::embed($paradas) }}"
+                                class="block w-full h-72 md:h-96" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                title="Mapa de referencia de {{ $cobertura->nombre }}"></iframe>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs text-piedra flex items-center gap-2">
+                            <span class="inline-block bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">Referencial</span>
+                            Recorrido aproximado hasta tener la ruta oficial.
+                        </p>
+                        <a href="{{ App\Presentation\Support\MapaReferencial::enlace($paradas) }}" target="_blank" rel="noopener noreferrer"
+                           class="text-sm font-medium text-campo hover:underline">Abrir en Google Maps ↗</a>
+                    </div>
+
+                    @if ($paradas !== [])
+                        <ol class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-piedra">
+                            <li class="font-medium text-bosque">Planta</li>
+                            @foreach ($paradas as $parada)
+                                <li aria-hidden="true">→</li>
+                                <li class="font-medium text-bosque">{{ Str::before($parada, ',') }}</li>
+                            @endforeach
+                        </ol>
+                    @endif
+                </div>
+
+                <div class="md:col-span-2">
+                    <div class="flex items-baseline justify-between gap-2 mb-2">
+                        <h4 class="font-semibold text-bosque">Proveedores de la ruta</h4>
+                        <span class="text-xs text-piedra">{{ count($cobertura->proveedores) }} activos</span>
+                    </div>
+
+                    @if (count($cobertura->proveedores) > 0)
+                        <ul class="divide-y divide-linea border border-linea rounded-xl md:max-h-96 overflow-y-auto">
+                            @foreach ($cobertura->proveedores as $proveedor)
+                                <li wire:key="cobertura-proveedor-{{ $proveedor->id }}" class="flex items-center justify-between gap-3 px-3 py-2.5">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-bosque truncate">{{ $proveedor->nombre }}</p>
+                                        <p class="text-xs text-piedra truncate">
+                                            {{ $proveedor->finca ?? 'Sin finca registrada' }}@if ($proveedor->telefono) · {{ $proveedor->telefono }}@endif
+                                        </p>
+                                    </div>
+                                    <span class="shrink-0 text-xs text-piedra">{{ number_format($proveedor->litrosPromedio, 0) }} L prom.</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-sm text-piedra border border-dashed border-linea rounded-xl p-4">Esta ruta todavía no tiene proveedores activos.</p>
+                    @endif
+
+                    <a href="{{ route('movilidades.detalle', $cobertura->id) }}" wire:navigate
+                       class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-campo hover:underline">
+                        Ver el recorrido de hoy
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" /></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
 @if($showRutasModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -228,3 +321,4 @@
         </div>
     </div>
 @endif
+</div>

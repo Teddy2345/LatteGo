@@ -16,6 +16,14 @@ interface PagoRepository
     public function buscarPorProveedorYSemana(int $proveedorId, DateTimeImmutable $semanaInicio): ?Pago;
 
     /**
+     * La planilla y los complementarios de ese proveedor en esa semana, por
+     * secuencia.
+     *
+     * @return Pago[]
+     */
+    public function listarPorProveedorYSemana(int $proveedorId, DateTimeImmutable $semanaInicio): array;
+
+    /**
      * @return Pago[]
      */
     public function listarTodos(): array;

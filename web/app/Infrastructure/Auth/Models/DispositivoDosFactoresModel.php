@@ -12,7 +12,7 @@ final class DispositivoDosFactoresModel extends Model
 {
     protected $table = 'dispositivos_dos_factores';
 
-    protected $fillable = ['user_id', 'token_id', 'nombre', 'vinculado_en', 'ultimo_uso_en'];
+    protected $fillable = ['user_id', 'dispositivo_id', 'token_id', 'nombre', 'vinculado_en', 'ultimo_uso_en'];
 
     protected function casts(): array
     {

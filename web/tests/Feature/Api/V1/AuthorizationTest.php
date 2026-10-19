@@ -14,7 +14,7 @@ function autenticarConRol(string $rol): User
     $user = User::factory()->create();
     $user->assignRole($rol);
 
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     return $user;
 }
@@ -26,9 +26,13 @@ test('un acopiador no puede eliminar un proveedor', function () {
     $this->deleteJson("/api/v1/proveedores/{$proveedor->id}")->assertForbidden();
 });
 
-test('un acopiador si puede registrar un acopio', function () {
-    autenticarConRol('acopiador');
-    $proveedor = ProveedorModel::factory()->create();
+test('un acopiador si puede registrar un acopio de un proveedor de su ruta', function () {
+    $acopiador = autenticarConRol('acopiador');
+    $ruta = \App\Infrastructure\Proveedor\Models\RutaModel::create(['nombre' => 'Huata Centro']);
+    \App\Infrastructure\Movilidad\Models\MovilidadModel::create([
+        'nombre' => 'Camión 01', 'tipo' => 'camion', 'ruta_id' => $ruta->id, 'activa' => true, 'usuario_id' => $acopiador->id,
+    ]);
+    $proveedor = ProveedorModel::factory()->create(['ruta_id' => $ruta->id]);
 
     $this->postJson('/api/v1/acopios', [
         'proveedor_id' => $proveedor->id,

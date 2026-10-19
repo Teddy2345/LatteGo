@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Queso madurado">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7F7F0"/>
+      <stop offset="1" stop-color="#E7EEE3"/>
+    </linearGradient>
+    <linearGradient id="cara" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F6D06A"/>
+      <stop offset="1" stop-color="#E9B23F"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#fondo)"/>
+  <circle cx="70" cy="55" r="55" fill="#DFE5DA" opacity=".55"/>
+  <ellipse cx="200" cy="205" rx="125" ry="15" fill="#173E32" opacity=".10"/>
+  <!-- cuña -->
+  <path d="M95 190 L305 190 L305 120 Z" fill="#D69A2E"/>
+  <path d="M95 190 L305 120 L270 88 Z" fill="url(#cara)"/>
+  <!-- corteza -->
+  <path d="M270 88 L305 120 L305 190 L300 190 L300 124 L268 94 Z" fill="#B97A22"/>
+  <!-- ojos del queso -->
+  <g fill="#D69A2E">
+    <ellipse cx="205" cy="150" rx="11" ry="7"/>
+    <ellipse cx="250" cy="130" rx="8" ry="5"/>
+    <ellipse cx="160" cy="172" rx="7" ry="4.5"/>
+    <ellipse cx="262" cy="160" rx="6" ry="4"/>
+  </g>
+  <g fill="#F1B53B">
+    <ellipse cx="228" cy="116" rx="7" ry="4.5"/>
+    <ellipse cx="185" cy="137" rx="5" ry="3.2"/>
+  </g>
+  <g fill="#FBE3A0" opacity=".7">
+    <ellipse cx="202" cy="147" rx="4" ry="2.3"/>
+    <ellipse cx="248" cy="128" rx="3" ry="1.8"/>
+  </g>
+</svg>

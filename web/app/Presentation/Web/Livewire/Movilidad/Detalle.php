@@ -7,43 +7,30 @@ namespace App\Presentation\Web\Livewire\Movilidad;
 use App\Application\Movilidad\DTOs\RegistrarNoEntregaData;
 use App\Application\Movilidad\UseCases\ObtenerDetalleMovilidadUseCase;
 use App\Application\Movilidad\UseCases\RegistrarNoEntregaUseCase;
-use App\Application\Proveedor\DTOs\CrearSolicitudCambioZonaData;
-use App\Application\Proveedor\UseCases\CrearSolicitudCambioZonaUseCase;
-use App\Application\Proveedor\UseCases\ListarRutasDisponiblesUseCase;
-use App\Domain\Proveedor\Exceptions\SolicitudCambioZonaException;
 use App\Infrastructure\Movilidad\Models\MovilidadModel;
-use App\Infrastructure\Proveedor\Models\SolicitudCambioZonaModel;
+use App\Infrastructure\Proveedor\Models\ProveedorModel;
+use App\Presentation\Support\AlcanceMovilidades;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 final class Detalle extends Component
 {
+    #[Locked]
     public int $movilidadId;
 
     public ?int $proveedorParaNoEntrega = null;
     public string $motivoNoEntrega = '';
 
-    public ?int $proveedorParaCambioZona = null;
-    public ?int $rutaSolicitadaId = null;
-    public string $fechaCambioZona = '';
-    public string $motivoCambioZona = '';
-    public string $errorCambioZona = '';
-
     public function mount(int $movilidadId): void
     {
         $this->authorize('view', MovilidadModel::class);
 
-        $user = auth()->user();
-
-        if (! $user->can('reportes.ver')) {
-            $movilidad = MovilidadModel::query()->findOrFail($movilidadId);
-            abort_if($movilidad->usuario_id !== $user->id, 403, 'Esta movilidad no te fue asignada.');
-        }
+        AlcanceMovilidades::propia(auth()->user(), $movilidadId);
 
         $this->movilidadId = $movilidadId;
-        $this->fechaCambioZona = now()->format('Y-m-d');
     }
 
     public function abrirNoEntrega(int $proveedorId): void
@@ -57,6 +44,19 @@ final class Detalle extends Component
         $this->proveedorParaNoEntrega = null;
     }
 
+    /**
+     * El proveedor llega del navegador, asi que se comprueba que sea del
+     * recorrido de esta movilidad: si no, se podria marcar un "no entrego" o
+     * pedir el traslado de un ganadero de otra ruta.
+     */
+    private function asegurarProveedorDelRecorrido(int $proveedorId): void
+    {
+        AlcanceMovilidades::asegurarProveedorDelRecorrido(
+            AlcanceMovilidades::propia(auth()->user(), $this->movilidadId),
+            ProveedorModel::query()->whereKey($proveedorId)->value('ruta_id'),
+        );
+    }
+
     public function confirmarNoEntrega(RegistrarNoEntregaUseCase $registrar): void
     {
         $this->authorize('registrarIncidencia', MovilidadModel::class);
@@ -64,6 +64,8 @@ final class Detalle extends Component
         if ($this->proveedorParaNoEntrega === null) {
             return;
         }
+
+        $this->asegurarProveedorDelRecorrido($this->proveedorParaNoEntrega);
 
         $registrar->ejecutar(new RegistrarNoEntregaData(
             proveedorId: $this->proveedorParaNoEntrega,
@@ -76,58 +78,10 @@ final class Detalle extends Component
         $this->proveedorParaNoEntrega = null;
     }
 
-    public function abrirCambioZona(int $proveedorId): void
-    {
-        $this->authorize('create', SolicitudCambioZonaModel::class);
-
-        $this->proveedorParaCambioZona = $proveedorId;
-        $this->rutaSolicitadaId = null;
-        $this->motivoCambioZona = '';
-        $this->errorCambioZona = '';
-    }
-
-    public function cancelarCambioZona(): void
-    {
-        $this->proveedorParaCambioZona = null;
-    }
-
-    public function confirmarCambioZona(CrearSolicitudCambioZonaUseCase $crear): void
-    {
-        $this->authorize('create', SolicitudCambioZonaModel::class);
-
-        if ($this->proveedorParaCambioZona === null) {
-            return;
-        }
-
-        $this->validate([
-            'rutaSolicitadaId' => ['required', 'integer'],
-            'fechaCambioZona' => ['required', 'date'],
-        ], [], ['rutaSolicitadaId' => 'nueva zona', 'fechaCambioZona' => 'fecha del cambio']);
-
-        $this->errorCambioZona = '';
-
-        try {
-            $crear->ejecutar(new CrearSolicitudCambioZonaData(
-                proveedorId: $this->proveedorParaCambioZona,
-                rutaSolicitadaId: (int) $this->rutaSolicitadaId,
-                fechaCambio: $this->fechaCambioZona,
-                motivo: $this->motivoCambioZona !== '' ? $this->motivoCambioZona : null,
-                solicitadoPor: auth()->id(),
-            ));
-        } catch (SolicitudCambioZonaException $e) {
-            $this->errorCambioZona = $e->getMessage();
-
-            return;
-        }
-
-        $this->proveedorParaCambioZona = null;
-    }
-
-    public function render(ObtenerDetalleMovilidadUseCase $obtener, ListarRutasDisponiblesUseCase $listarRutas): View
+    public function render(ObtenerDetalleMovilidadUseCase $obtener): View
     {
         return view('livewire.movilidad.detalle', [
             'movilidad' => $obtener->ejecutar($this->movilidadId),
-            'rutasDisponibles' => $listarRutas->ejecutar(),
         ]);
     }
 }

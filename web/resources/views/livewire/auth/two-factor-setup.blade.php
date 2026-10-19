@@ -47,45 +47,7 @@
                 @endif
             </div>
 
-            <div class="border-t border-linea pt-4">
-                <p class="text-sm font-medium">Recibir el código en tu celular</p>
-                <p class="text-xs text-piedra mt-1 mb-3">
-                    Vincula tu teléfono una vez y el código de 6 dígitos te llegará a la campana
-                    de la app Ecolactea, sin necesidad de instalar otra aplicación.
-                    <strong>Solo el teléfono que vincules</strong> podrá verlo.
-                </p>
-
-                @forelse ($telefonosVinculados as $telefono)
-                    <div class="flex items-center justify-between gap-3 bg-crema rounded-md px-3 py-2 mb-2 text-sm">
-                        <div>
-                            <span class="text-bosque font-medium">{{ $telefono->nombre }}</span>
-                            <span class="text-piedra text-xs block">
-                                Vinculado el {{ $telefono->vinculado_en?->format('Y-m-d H:i') }}
-                            </span>
-                        </div>
-                        <button type="button" wire:click="desvincularTelefono({{ $telefono->id }})"
-                                wire:confirm="Este teléfono dejará de recibir códigos. ¿Continuar?"
-                                class="text-xs text-red-700 hover:underline shrink-0">Desvincular</button>
-                    </div>
-                @empty
-                    <p class="text-xs text-piedra mb-3">Todavía no vinculaste ningún teléfono.</p>
-                @endforelse
-
-                @if ($codigoVinculacion !== null)
-                    <div class="bg-salvia border border-linea rounded-md px-4 py-3">
-                        <p class="text-xs text-bosque mb-1">
-                            Escribe este código en la app, en Perfil → Verificación en dos pasos.
-                            Vence en 10 minutos.
-                        </p>
-                        <p class="font-mono text-2xl tracking-widest text-bosque">{{ $codigoVinculacion }}</p>
-                    </div>
-                @else
-                    <button type="button" wire:click="generarCodigoVinculacion"
-                            class="border border-campo text-campo px-4 py-2 rounded-md text-sm hover:bg-salvia">
-                        Vincular mi celular
-                    </button>
-                @endif
-            </div>
+            @include('livewire.auth.partials.vincular-telefono')
 
             <a href="{{ route('dashboard') }}" wire:navigate
                class="inline-block bg-campo text-white px-4 py-2 rounded-md text-sm hover:bg-bosque">
@@ -94,7 +56,22 @@
         </div>
     @elseif ($pendienteConfirmar)
         <div class="bg-white shadow rounded-lg p-6 space-y-4">
-            <p class="text-sm">Escanea este codigo QR con tu aplicacion de autenticacion (Google Authenticator, Authy, etc.):</p>
+            @if ($aviso !== '')
+                <div class="rounded-md bg-salvia border border-linea text-bosque px-3 py-2 text-sm">
+                    {{ $aviso }}
+                </div>
+            @endif
+
+            <div class="rounded-md bg-crema border border-linea px-4 py-3">
+                <p class="text-sm font-medium text-bosque">Con tu celular (recomendado)</p>
+                <p class="text-xs text-piedra mt-1">
+                    Vincula la app Ecolactea abajo y escribe en «Código de 6 dígitos» el que te muestra su campana.
+                    No necesitas instalar otra aplicación.
+                </p>
+                @include('livewire.auth.partials.vincular-telefono')
+            </div>
+
+            <p class="text-sm">O escanea este codigo QR con una aplicacion de autenticacion (Google Authenticator, Authy, etc.):</p>
 
             <div class="border border-linea rounded-md p-4 inline-block bg-white">
                 {!! $qrCode !!}

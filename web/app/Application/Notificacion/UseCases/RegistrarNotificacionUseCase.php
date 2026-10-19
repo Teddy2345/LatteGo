@@ -30,6 +30,7 @@ final class RegistrarNotificacionUseCase
             nivel: $datos->nivel,
             datos: $datos->datos,
             creadaEn: null,
+            usuarioId: $datos->usuarioId,
         ));
     }
 }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Pedidos\Entities;
 
+use App\Domain\Inventario\ValueObjects\TipoCliente;
 use App\Domain\Pedidos\Exceptions\CarritoVacioException;
 use App\Domain\Pedidos\Exceptions\EstadoPedidoInvalidoException;
 use App\Domain\Pedidos\Exceptions\PedidoYaRevisadoException;
 use App\Domain\Pedidos\ValueObjects\EstadoPedido;
 use App\Domain\Pedidos\ValueObjects\MetodoPago;
+use App\Domain\Pedidos\ValueObjects\TipoEntrega;
 use DateTimeImmutable;
 
 /**
@@ -34,6 +36,11 @@ final class Pedido
         public readonly ?MetodoPago $metodoPago,
         public readonly ?float $montoCobrado,
         public readonly ?DateTimeImmutable $fechaEntrega,
+        public readonly ?int $usuarioId = null,
+        public readonly ?string $codigo = null,
+        public readonly ?TipoEntrega $tipoEntrega = null,
+        public readonly TipoCliente $tipoCliente = TipoCliente::Externo,
+        public readonly ?string $referenciaPago = null,
     ) {
     }
 
@@ -47,6 +54,9 @@ final class Pedido
         DateTimeImmutable $fecha,
         ?string $observaciones,
         array $items,
+        ?int $usuarioId = null,
+        ?TipoEntrega $tipoEntrega = null,
+        TipoCliente $tipoCliente = TipoCliente::Externo,
     ): self {
         if ($items === []) {
             throw new CarritoVacioException('El carrito esta vacio.');
@@ -65,6 +75,11 @@ final class Pedido
             metodoPago: null,
             montoCobrado: null,
             fechaEntrega: null,
+            usuarioId: $usuarioId,
+            // Corto y sin letras confundibles: se dicta al repartidor.
+            codigo: $usuarioId === null ? null : self::codigoNuevo(),
+            tipoEntrega: $tipoEntrega,
+            tipoCliente: $tipoCliente,
         );
     }
 
@@ -84,8 +99,29 @@ final class Pedido
         ?MetodoPago $metodoPago = null,
         ?float $montoCobrado = null,
         ?DateTimeImmutable $fechaEntrega = null,
+        ?int $usuarioId = null,
+        ?string $codigo = null,
+        ?TipoEntrega $tipoEntrega = null,
+        TipoCliente $tipoCliente = TipoCliente::Externo,
+        ?string $referenciaPago = null,
     ): self {
-        return new self($id, $clienteNombre, $clienteTelefono, $clienteDireccion, $fecha, $estado, $observaciones, $items, $repartidorId, $metodoPago, $montoCobrado, $fechaEntrega);
+        return new self($id, $clienteNombre, $clienteTelefono, $clienteDireccion, $fecha, $estado, $observaciones, $items, $repartidorId, $metodoPago, $montoCobrado, $fechaEntrega, $usuarioId, $codigo, $tipoEntrega, $tipoCliente, $referenciaPago);
+    }
+
+    /**
+     * Codigo corto del comprobante: se dicta al repartidor o se muestra en
+     * planta al recoger. Sin 0/O ni 1/I/L para no confundir al leerlo.
+     */
+    private static function codigoNuevo(): string
+    {
+        $alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        $codigo = '';
+
+        for ($i = 0; $i < 6; $i++) {
+            $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+        }
+
+        return $codigo;
     }
 
     public function total(): float
@@ -103,9 +139,16 @@ final class Pedido
         return $this->conEstado(EstadoPedido::Confirmado);
     }
 
+    /**
+     * Se cancela mientras no se haya entregado. Tambien un confirmado: el
+     * cliente puede arrepentirse o no estar al llegar el repartidor, y como
+     * confirmar reserva mercaderia, sin esto quedaria bloqueada para siempre.
+     */
     public function cancelar(): self
     {
-        $this->exigirPendiente();
+        if (! in_array($this->estado, [EstadoPedido::Pendiente, EstadoPedido::Confirmado], true)) {
+            throw new PedidoYaRevisadoException('Solo se puede cancelar un pedido pendiente o confirmado.');
+        }
 
         return $this->conEstado(EstadoPedido::Cancelado);
     }
@@ -134,6 +177,11 @@ final class Pedido
             $this->metodoPago,
             $this->montoCobrado,
             $this->fechaEntrega,
+            $this->usuarioId,
+            $this->codigo,
+            $this->tipoEntrega,
+            $this->tipoCliente,
+            $this->referenciaPago,
         );
     }
 
@@ -142,8 +190,12 @@ final class Pedido
      * Requiere un repartidor ya asignado: es quien reparte el que cobra y
      * confirma la entrega en el momento.
      */
-    public function entregar(MetodoPago $metodoPago, float $montoCobrado, DateTimeImmutable $fechaEntrega): self
-    {
+    public function entregar(
+        MetodoPago $metodoPago,
+        float $montoCobrado,
+        DateTimeImmutable $fechaEntrega,
+        ?string $referenciaPago = null,
+    ): self {
         if ($this->estado !== EstadoPedido::Confirmado) {
             throw new EstadoPedidoInvalidoException('Solo se puede entregar un pedido confirmado.');
         }
@@ -154,6 +206,16 @@ final class Pedido
 
         if (! is_finite($montoCobrado) || $montoCobrado <= 0) {
             throw new EstadoPedidoInvalidoException('El monto cobrado debe ser mayor a 0.');
+        }
+
+        $referencia = $referenciaPago === null ? null : trim($referenciaPago);
+
+        // Sin el numero de operacion el cobro no se puede cotejar despues.
+        if ($metodoPago->exigeReferencia() && ($referencia === null || $referencia === '')) {
+            throw new EstadoPedidoInvalidoException(sprintf(
+                'Anota el número de operación del pago por %s.',
+                $metodoPago->etiqueta(),
+            ));
         }
 
         return new self(
@@ -169,6 +231,12 @@ final class Pedido
             $metodoPago,
             round($montoCobrado, 2),
             $fechaEntrega,
+            $this->usuarioId,
+            $this->codigo,
+            $this->tipoEntrega,
+            $this->tipoCliente,
+            // El efectivo no deja referencia aunque llegue una por error.
+            $metodoPago->exigeReferencia() ? $referencia : null,
         );
     }
 
@@ -187,6 +255,11 @@ final class Pedido
             $this->metodoPago,
             $this->montoCobrado,
             $this->fechaEntrega,
+            $this->usuarioId,
+            $this->codigo,
+            $this->tipoEntrega,
+            $this->tipoCliente,
+            $this->referenciaPago,
         );
     }
 
